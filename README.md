@@ -13,7 +13,7 @@
 ## 회의록, 진행상황
 - 3월 7일(https://www.notion.so/3-7-1af458dfe18b809dacaccdf0da380768) 작성자: 조은정
 - 3월 12일(링크)
-
+- 3월 14일(https://www.notion.so/3-14-1b6458dfe18b803fbe2dd5698b61c2ce) 작성자: 박주열
 
 
 ## 팀원
