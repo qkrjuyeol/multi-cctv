@@ -35,10 +35,17 @@ protected:
 public:
 	afx_msg void OnStnClickedPicture();
 	CStatic m_picture;
+	CStatic m_picture1;
+	CStatic m_picture2;
+	CStatic m_picture3;
 	afx_msg void OnDestroy();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 	VideoCapture* capture;
 	Mat mat_frame;
 	CImage cimage_mfc;
+private:
+	void DisplayFrame(cv::Mat& frame, CStatic& pictureControl); // 함수 선언 추가
+public:
+	afx_msg void OnStnClickedPicture3();
 };
