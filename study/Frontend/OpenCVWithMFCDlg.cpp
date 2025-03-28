@@ -221,9 +221,12 @@ void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 	cv::cvtColor(grayFrame, grayFrameColor, cv::COLOR_GRAY2BGR); // 그레이스케일을 컬러로 다시 변환
 
 	// 변환된 화면을 4개의 컨트롤에 출력
-	DisplayFrame(flippedHorizontally, m_picture);    // 좌우 반전 화면
-	DisplayFrame(flippedVertically, m_picture1);     // 상하 반전 화면
-	DisplayFrame(grayFrameColor, m_picture2);        // 그레이스케일 화면
+	//DisplayFrame(flippedHorizontally, m_picture);    // 좌우 반전 화면
+	//DisplayFrame(flippedVertically, m_picture1);     // 상하 반전 화면
+	//DisplayFrame(grayFrameColor, m_picture2);        // 그레이스케일 화면
+	DisplayFrame(mat_frame, m_picture);             // 원본 화면
+	DisplayFrame(mat_frame, m_picture1);             // 원본 화면
+	DisplayFrame(mat_frame, m_picture2);             // 원본 화면
 	DisplayFrame(mat_frame, m_picture3);             // 원본 화면
 
 	CDialogEx::OnTimer(nIDEvent);
