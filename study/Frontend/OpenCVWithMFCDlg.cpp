@@ -73,6 +73,7 @@ BEGIN_MESSAGE_MAP(COpenCVWithMFCDlg, CDialogEx)
 	ON_WM_DESTROY()
 	ON_WM_TIMER()
 	ON_STN_CLICKED(IDC_PICTURE3, &COpenCVWithMFCDlg::OnStnClickedPicture3)
+	ON_STN_CLICKED(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnStnClickedLogBox)
 END_MESSAGE_MAP()
 
 
@@ -283,6 +284,12 @@ void COpenCVWithMFCDlg::DisplayFrame(cv::Mat& frame, CStatic& pictureControl)
 
 
 void COpenCVWithMFCDlg::OnStnClickedPicture3()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}
+
+
+void COpenCVWithMFCDlg::OnStnClickedLogBox()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
