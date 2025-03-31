@@ -48,4 +48,6 @@ private:
 	void DisplayFrame(cv::Mat& frame, CStatic& pictureControl); // 함수 선언 추가
 public:
 	afx_msg void OnStnClickedPicture3();
+	afx_msg void OnStnClickedLogBox();
+	CStatic m_logBox;
 };
