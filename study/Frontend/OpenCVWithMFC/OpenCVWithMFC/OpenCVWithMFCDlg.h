@@ -46,6 +46,8 @@ public:
 	CImage cimage_mfc;
 private:
 	void DisplayFrame(cv::Mat& frame, CStatic& pictureControl); // 함수 선언 추가
+	std::vector<cv::VideoCapture> captures; // 여러 개의 비디오 스트림
+	std::vector<std::string> streamURLs;    // CCTV 스트림 URL 저장
 public:
 	afx_msg void OnStnClickedPicture3();
 	afx_msg void OnStnClickedLogBox();

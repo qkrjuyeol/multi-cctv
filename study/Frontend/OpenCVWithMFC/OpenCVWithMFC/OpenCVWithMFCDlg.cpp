@@ -82,56 +82,31 @@ END_MESSAGE_MAP()
 BOOL COpenCVWithMFCDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	capture = new VideoCapture(0);
 
-	if (!capture->isOpened())
+	// CCTV 스트림 URL 리스트
+	streamURLs = {
+		"http://cctvsec.ktict.co.kr/138/7ZIeMPWKXQSsPPtEk/L7cZD32MojYyR+t2aPMLmTGIvQwu3zmjLddC2Kk6HC2YxjLZtdOIAiAEpLComas04c/IcJ9jNGE5Bx51hdStrzVl0=",
+		"http://cctvsec.ktict.co.kr/139/YdKKm/oXGB3YG8GJZiiEZUcYFycOZHiyC5eDZjSz6u5xVq1J1yi/pMC78nJ4+8eDlOOBw+/Xd+pjatRk5d20oC7Alc2wqHQc+7ZYJvrR/Hg=",
+		"http://cctvsec.ktict.co.kr/141/9NZjrrlOAEqKrjdlyKbr6j4jpGkg2cKZq1x5xc1BiakObXU1o2B8j978DWJpUKIrFecaj3D699UWlvCPYjg71MgyAoqpZOQk8TjPqyq8sCM=",
+		"http://cctvsec.ktict.co.kr/2060/KvR9/XSs58LVgCeJEdoCjnaRVu53Rg2kqseQsB6HwtzweyNenOcXwQoIkzMM7qVQQd1YhFrV9WwP75W+jb/JnJ//n4j4C66RsPlDBPMep4M="
+	};
 
+	// URL 개수만큼 VideoCapture 객체 생성
+	for (const auto& url : streamURLs)
 	{
-
-		MessageBox(_T("웹캠을 열수 없습니다. \n"));
-
-	}
-
-
-
-	//웹캠 크기를  320x240으로 지정    
-
-	capture->set(CAP_PROP_FRAME_WIDTH, 320);
-
-	capture->set(CAP_PROP_FRAME_HEIGHT, 240);
-
-
-
-	SetTimer(1000, 30, NULL);
-
-	// 시스템 메뉴에 "정보..." 메뉴 항목을 추가합니다.
-
-	// IDM_ABOUTBOX는 시스템 명령 범위에 있어야 합니다.
-	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
-	ASSERT(IDM_ABOUTBOX < 0xF000);
-
-	CMenu* pSysMenu = GetSystemMenu(FALSE);
-	if (pSysMenu != nullptr)
-	{
-		BOOL bNameValid;
-		CString strAboutMenu;
-		bNameValid = strAboutMenu.LoadString(IDS_ABOUTBOX);
-		ASSERT(bNameValid);
-		if (!strAboutMenu.IsEmpty())
+		cv::VideoCapture cap(url);
+		if (!cap.isOpened())
 		{
-			pSysMenu->AppendMenu(MF_SEPARATOR);
-			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+			CString msg;
+			msg.Format(_T("CCTV 스트림을 열 수 없습니다: %s"), CString(url.c_str()));
+			MessageBox(msg);
 		}
+		captures.push_back(std::move(cap));
 	}
 
-	// 이 대화 상자의 아이콘을 설정합니다.  응용 프로그램의 주 창이 대화 상자가 아닐 경우에는
-	//  프레임워크가 이 작업을 자동으로 수행합니다.
-	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
-	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
+	SetTimer(1000, 30, NULL); // 30ms마다 프레임 업데이트
 
-	// TODO: 여기에 추가 초기화 작업을 추가합니다.
-
-	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
+	return TRUE;
 }
 
 void COpenCVWithMFCDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -203,32 +178,25 @@ void COpenCVWithMFCDlg::OnDestroy()
 
 void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	capture->read(mat_frame);
+	std::vector<cv::Mat> frames(captures.size());
 
-	if (mat_frame.empty()) return;
+	for (size_t i = 0; i < captures.size(); i++)
+	{
+		if (!captures[i].isOpened()) continue;  // 스트림이 열려있는지 확인
 
-	// 좌우 반전
-	cv::Mat flippedHorizontally;
-	cv::flip(mat_frame, flippedHorizontally, 1);
+		captures[i].read(frames[i]);
+		if (frames[i].empty()) continue;
 
-	// 상하 반전
-	cv::Mat flippedVertically;
-	cv::flip(mat_frame, flippedVertically, 0);
-
-	// 그레이스케일 변환
-	cv::Mat grayFrame;
-	cv::cvtColor(mat_frame, grayFrame, cv::COLOR_BGR2GRAY);
-	cv::Mat grayFrameColor;
-	cv::cvtColor(grayFrame, grayFrameColor, cv::COLOR_GRAY2BGR); // 그레이스케일을 컬러로 다시 변환
-
-	// 변환된 화면을 4개의 컨트롤에 출력
-	//DisplayFrame(flippedHorizontally, m_picture);    // 좌우 반전 화면
-	//DisplayFrame(flippedVertically, m_picture1);     // 상하 반전 화면
-	//DisplayFrame(grayFrameColor, m_picture2);        // 그레이스케일 화면
-	DisplayFrame(mat_frame, m_picture);             // 원본 화면
-	DisplayFrame(mat_frame, m_picture1);             // 원본 화면
-	DisplayFrame(mat_frame, m_picture2);             // 원본 화면
-	DisplayFrame(mat_frame, m_picture3);             // 원본 화면
+		// 영상 출력
+		switch (i)
+		{
+		case 0: DisplayFrame(frames[i], m_picture); break;
+		case 1: DisplayFrame(frames[i], m_picture1); break;
+		case 2: DisplayFrame(frames[i], m_picture2); break;
+		case 3: DisplayFrame(frames[i], m_picture3); break;
+		default: break;
+		}
+	}
 
 	CDialogEx::OnTimer(nIDEvent);
 }
