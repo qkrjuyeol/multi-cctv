@@ -1,6 +1,4 @@
-﻿
-// OpenCVWithMFCDlg.cpp: 구현 파일
-//
+﻿// OpenCVWithMFCDlg.cpp: 구현 파일
 
 #include "pch.h"
 #include "framework.h"
@@ -12,7 +10,6 @@
 #define new DEBUG_NEW
 #endif
 
-
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 
 class CAboutDlg : public CDialogEx
@@ -20,22 +17,18 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);
 
-// 구현입니다.
 protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
-{
-}
+CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX) {}
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -47,8 +40,6 @@ END_MESSAGE_MAP()
 
 
 // COpenCVWithMFCDlg 대화 상자
-
-
 
 COpenCVWithMFCDlg::COpenCVWithMFCDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_OPENCVWITHMFC_DIALOG, pParent)
@@ -69,13 +60,14 @@ BEGIN_MESSAGE_MAP(COpenCVWithMFCDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_STN_CLICKED(IDC_PICTURE, &COpenCVWithMFCDlg::OnStnClickedPicture)
 	ON_WM_DESTROY()
 	ON_WM_TIMER()
-	ON_STN_CLICKED(IDC_PICTURE3, &COpenCVWithMFCDlg::OnStnClickedPicture3)
+	ON_STN_CLICKED(IDC_PICTURE, &COpenCVWithMFCDlg::OnClickedPicture)
+	ON_STN_CLICKED(IDC_PICTURE1, &COpenCVWithMFCDlg::OnClickedPicture1)
+	ON_STN_CLICKED(IDC_PICTURE2, &COpenCVWithMFCDlg::OnClickedPicture2)
+	ON_STN_CLICKED(IDC_PICTURE3, &COpenCVWithMFCDlg::OnClickedPicture3)
 	ON_STN_CLICKED(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnStnClickedLogBox)
 END_MESSAGE_MAP()
-
 
 // COpenCVWithMFCDlg 메시지 처리기
 
@@ -83,7 +75,23 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// CCTV 스트림 URL 리스트
+	m_logBox.SubclassDlgItem(IDC_LOG_BOX, this);
+
+	m_picture.GetWindowRect(&originalRects[0]);
+	m_picture1.GetWindowRect(&originalRects[1]);
+	m_picture2.GetWindowRect(&originalRects[2]);
+	m_picture3.GetWindowRect(&originalRects[3]);
+
+	camViews[0] = &m_picture;
+	camViews[1] = &m_picture1;
+	camViews[2] = &m_picture2;
+	camViews[3] = &m_picture3;
+
+	ScreenToClient(&originalRects[0]);
+	ScreenToClient(&originalRects[1]);
+	ScreenToClient(&originalRects[2]);
+	ScreenToClient(&originalRects[3]);
+
 	streamURLs = {
 		"http://cctvsec.ktict.co.kr/138/7ZIeMPWKXQSsPPtEk/L7cZD32MojYyR+t2aPMLmTGIvQwu3zmjLddC2Kk6HC2YxjLZtdOIAiAEpLComas04c/IcJ9jNGE5Bx51hdStrzVl0=",
 		"http://cctvsec.ktict.co.kr/139/YdKKm/oXGB3YG8GJZiiEZUcYFycOZHiyC5eDZjSz6u5xVq1J1yi/pMC78nJ4+8eDlOOBw+/Xd+pjatRk5d20oC7Alc2wqHQc+7ZYJvrR/Hg=",
@@ -91,7 +99,6 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 		"http://cctvsec.ktict.co.kr/2060/KvR9/XSs58LVgCeJEdoCjnaRVu53Rg2kqseQsB6HwtzweyNenOcXwQoIkzMM7qVQQd1YhFrV9WwP75W+jb/JnJ//n4j4C66RsPlDBPMep4M="
 	};
 
-	// URL 개수만큼 VideoCapture 객체 생성
 	for (const auto& url : streamURLs)
 	{
 		cv::VideoCapture cap(url);
@@ -104,45 +111,23 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 		captures.push_back(std::move(cap));
 	}
 
-	SetTimer(1000, 30, NULL); // 30ms마다 프레임 업데이트
+	SetTimer(1000, 30, NULL);
 
 	return TRUE;
 }
-
-void COpenCVWithMFCDlg::OnSysCommand(UINT nID, LPARAM lParam)
-{
-	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
-	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{
-		CDialogEx::OnSysCommand(nID, lParam);
-	}
-}
-
-// 대화 상자에 최소화 단추를 추가할 경우 아이콘을 그리려면
-//  아래 코드가 필요합니다.  문서/뷰 모델을 사용하는 MFC 애플리케이션의 경우에는
-//  프레임워크에서 이 작업을 자동으로 수행합니다.
 
 void COpenCVWithMFCDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
-
+		CPaintDC dc(this);
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
-		// 클라이언트 사각형에서 아이콘을 가운데에 맞춥니다.
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
 		CRect rect;
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
-
-		// 아이콘을 그립니다.
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
@@ -151,30 +136,15 @@ void COpenCVWithMFCDlg::OnPaint()
 	}
 }
 
-// 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서
-//  이 함수를 호출합니다.
 HCURSOR COpenCVWithMFCDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
-void COpenCVWithMFCDlg::OnStnClickedPicture()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-}
-
-
 void COpenCVWithMFCDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-
-	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
 }
-
-
-
 
 void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 {
@@ -182,19 +152,24 @@ void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 
 	for (size_t i = 0; i < captures.size(); i++)
 	{
-		if (!captures[i].isOpened()) continue;  // 스트림이 열려있는지 확인
+		if (!captures[i].isOpened()) {
+			std::cout << "Camera " << i << " is not opened!" << std::endl;
+			continue;
+		}
 
 		captures[i].read(frames[i]);
-		if (frames[i].empty()) continue;
 
-		// 영상 출력
+		if (frames[i].empty()) {
+			std::cout << "Failed to read frame from camera " << i << std::endl;
+			continue;
+		}
+
 		switch (i)
 		{
 		case 0: DisplayFrame(frames[i], m_picture); break;
 		case 1: DisplayFrame(frames[i], m_picture1); break;
 		case 2: DisplayFrame(frames[i], m_picture2); break;
 		case 3: DisplayFrame(frames[i], m_picture3); break;
-		default: break;
 		}
 	}
 
@@ -205,59 +180,112 @@ void COpenCVWithMFCDlg::DisplayFrame(cv::Mat& frame, CStatic& pictureControl)
 {
 	if (frame.empty()) return;
 
-	int bpp = 8 * frame.elemSize();
-	int border = (bpp < 32) ? 4 - (frame.cols % 4) : 0;
-	if (border == 4) border = 0;
+	// 1. Image Control 크기 가져오기
+	CRect rect;
+	pictureControl.GetClientRect(&rect);
+	int targetWidth = rect.Width();
+	int targetHeight = rect.Height();
 
-	cv::Mat temp;
-	if (border > 0 || frame.isContinuous() == false)
-		cv::copyMakeBorder(frame, temp, 0, 0, 0, border, cv::BORDER_CONSTANT, 0);
-	else
-		temp = frame;
+	// 2. 프레임 크기 조정 (CStatic 크기에 맞춤)
+	cv::Mat frameRGB;
+	cv::resize(frame, frameRGB, cv::Size(targetWidth, targetHeight));
+	cv::cvtColor(frameRGB, frameRGB, cv::COLOR_BGR2RGB);
 
-	RECT r;
-	pictureControl.GetClientRect(&r);
-	cv::Size winSize(r.right, r.bottom);
+	std::cout << "Resized Frame size: " << frameRGB.cols << "x" << frameRGB.rows << std::endl;
 
+	// 3. OpenCV Mat → CImage 변환
 	CImage cimage_mfc;
-	cimage_mfc.Create(winSize.width, winSize.height, 24);
+	cimage_mfc.Create(frameRGB.cols, frameRGB.rows, 24);
 
-	BITMAPINFO* bitInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 256 * sizeof(RGBQUAD));
-	bitInfo->bmiHeader.biBitCount = bpp;
-	bitInfo->bmiHeader.biWidth = temp.cols;
-	bitInfo->bmiHeader.biHeight = -temp.rows;
-	bitInfo->bmiHeader.biPlanes = 1;
-	bitInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bitInfo->bmiHeader.biCompression = BI_RGB;
+	uchar* pBuffer = (uchar*)cimage_mfc.GetBits();
+	int step = cimage_mfc.GetPitch();
+	for (int y = 0; y < frameRGB.rows; y++)
+		memcpy(pBuffer + y * step, frameRGB.ptr(y), frameRGB.cols * 3);
 
-	if (bpp == 8) {
-		RGBQUAD* palette = bitInfo->bmiColors;
-		for (int i = 0; i < 256; i++) {
-			palette[i].rgbBlue = palette[i].rgbGreen = palette[i].rgbRed = (BYTE)i;
-			palette[i].rgbReserved = 0;
+	// 4. CStatic 컨트롤에 출력
+	HDC dc = ::GetDC(pictureControl.m_hWnd);
+	cimage_mfc.Draw(dc, 0, 0);
+	::ReleaseDC(pictureControl.m_hWnd, dc);
+}
+
+
+void COpenCVWithMFCDlg::ToggleZoom(int index)
+{
+	if (isZoomed[index])
+	{
+		// ✅ 원래 크기로 복원
+		for (int i = 0; i < 4; i++)
+		{
+			camViews[i]->MoveWindow(&originalRects[i]);
+			camViews[i]->ShowWindow(SW_SHOW);  // 숨겼던 화면 다시 표시
+		}
+	}
+	else
+	{
+		// ✅ 다이얼로그 전체 크기 가져오기
+		CRect dialogRect;
+		GetClientRect(&dialogRect);
+
+		// ✅ 텍스트 박스(`IDC_LOG_BOX`)의 위치를 가져오기
+		CRect logBoxRect;
+		m_logBox.GetWindowRect(&logBoxRect);
+		ScreenToClient(&logBoxRect); // 다이얼로그 좌표계로 변환
+
+		// ✅ 클릭한 화면을 텍스트 박스를 제외한 영역으로 확대
+		CRect zoomRect = dialogRect;
+		zoomRect.right = logBoxRect.left - 10;  // 텍스트 박스를 침범하지 않도록 조정
+
+		camViews[index]->MoveWindow(&zoomRect);
+
+		// ✅ 나머지 카메라는 숨기기
+		for (int i = 0; i < 4; i++)
+		{
+			if (i != index)
+				camViews[i]->ShowWindow(SW_HIDE);
 		}
 	}
 
-	StretchDIBits(cimage_mfc.GetDC(),
-		0, 0, winSize.width, winSize.height,
-		0, 0, temp.cols - border, temp.rows,
-		temp.data, bitInfo, DIB_RGB_COLORS, SRCCOPY);
-
-	HDC dc = ::GetDC(pictureControl.m_hWnd);
-	cimage_mfc.BitBlt(dc, 0, 0);
-	::ReleaseDC(pictureControl.m_hWnd, dc);
-	cimage_mfc.ReleaseDC();
-	cimage_mfc.Destroy();
+	isZoomed[index] = !isZoomed[index];
 }
 
 
-void COpenCVWithMFCDlg::OnStnClickedPicture3()
+void COpenCVWithMFCDlg::OnClickedPicture() 
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	std::cout << "Picture clicked!" << std::endl;  // 디버깅용 출력
+	ToggleZoom(0);
 }
 
+void COpenCVWithMFCDlg::OnClickedPicture1()
+{
+	std::cout << "Picture clicked1!" << std::endl;  // 디버깅용 출력
+	ToggleZoom(1);
+}
+
+void COpenCVWithMFCDlg::OnClickedPicture2()
+{
+	std::cout << "Picture clicked2!" << std::endl;  // 디버깅용 출력
+	ToggleZoom(2);
+}
+
+void COpenCVWithMFCDlg::OnClickedPicture3()
+{
+	std::cout << "Picture clicked3!" << std::endl;  // 디버깅용 출력
+	ToggleZoom(3);
+}
+
+
+void COpenCVWithMFCDlg::OnSysCommand(UINT nID, LPARAM lParam)
+{
+	if ((nID & 0xfff0) == SC_KEYMENU) // Disable the ALT application menu
+	{
+		return;
+	}
+	CDialogEx::OnSysCommand(nID, lParam);
+}
 
 void COpenCVWithMFCDlg::OnStnClickedLogBox()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	// 로그 박스를 클릭했을 때의 동작을 구현
+	// 예시: 로그를 출력하는 대화 상자 열기
+	AfxMessageBox(_T("Log box clicked!"));
 }
