@@ -5,12 +5,12 @@
 #include "OpenCVWithMFC.h"
 #include "OpenCVWithMFCDlg.h"
 #include "afxdialogex.h"
+#include <winhttp.h>
+#pragma comment(lib, "winhttp.lib")
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
-// 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 
 class CAboutDlg : public CDialogEx
 {
@@ -38,13 +38,11 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
-
-// COpenCVWithMFCDlg 대화 상자
-
 COpenCVWithMFCDlg::COpenCVWithMFCDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_OPENCVWITHMFC_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	lastLogTime.fill(0);
 }
 
 void COpenCVWithMFCDlg::DoDataExchange(CDataExchange* pDX)
@@ -70,8 +68,6 @@ BEGIN_MESSAGE_MAP(COpenCVWithMFCDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnEnChangeLogBox)
 END_MESSAGE_MAP()
 
-// COpenCVWithMFCDlg 메시지 처리기
-
 BOOL COpenCVWithMFCDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -82,12 +78,10 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 	m_picture1.GetWindowRect(&originalRects[1]);
 	m_picture2.GetWindowRect(&originalRects[2]);
 	m_picture3.GetWindowRect(&originalRects[3]);
-	
 	camViews[0] = &m_picture;
 	camViews[1] = &m_picture1;
 	camViews[2] = &m_picture2;
 	camViews[3] = &m_picture3;
-
 	ScreenToClient(&originalRects[0]);
 	ScreenToClient(&originalRects[1]);
 	ScreenToClient(&originalRects[2]);
@@ -112,61 +106,57 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 		captures.push_back(std::move(cap));
 	}
 
-	SetTimer(1000, 30, NULL);
-
+	SetTimer(1000, 1000, NULL); // 1초 타이머
 	return TRUE;
-}
-
-void COpenCVWithMFCDlg::OnPaint()
-{
-	if (IsIconic())
-	{
-		CPaintDC dc(this);
-		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-		int cxIcon = GetSystemMetrics(SM_CXICON);
-		int cyIcon = GetSystemMetrics(SM_CYICON);
-		CRect rect;
-		GetClientRect(&rect);
-		int x = (rect.Width() - cxIcon + 1) / 2;
-		int y = (rect.Height() - cyIcon + 1) / 2;
-		dc.DrawIcon(x, y, m_hIcon);
-	}
-	else
-	{
-		CDialogEx::OnPaint();
-	}
-}
-
-HCURSOR COpenCVWithMFCDlg::OnQueryDragIcon()
-{
-	return static_cast<HCURSOR>(m_hIcon);
-}
-
-void COpenCVWithMFCDlg::OnDestroy()
-{
-	CDialogEx::OnDestroy();
 }
 
 void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 {
+	time_t now = time(nullptr);
 	std::vector<cv::Mat> frames(captures.size());
 
 	for (size_t i = 0; i < captures.size(); i++)
 	{
-		if (!captures[i].isOpened()) {
-			std::cout << "Camera " << i << " is not opened!" << std::endl;
-			continue;
-		}
-
+		if (!captures[i].isOpened()) continue;
 		captures[i].read(frames[i]);
+		if (frames[i].empty()) continue;
 
-		if (frames[i].empty()) {
-			std::cout << "Failed to read frame from camera " << i << std::endl;
-			continue;
+		std::string base64 = EncodeMatToBase64(frames[i]);
+		std::string resultJson;
+		if (PostFrameAndGetDetections(base64, resultJson)) {
+			if (resultJson.find("\"detections\":[]") == std::string::npos) {
+				if (now - lastLogTime[i] >= 1) {
+					lastLogTime[i] = now;
+					try {
+						CString parsedLog;
+						parsedLog.Format(_T("#%d 카메라: "), (int)i + 1);
+						std::string::size_type pos = 0;
+						while ((pos = resultJson.find("{\"class\":\"", pos)) != std::string::npos) {
+							pos += 10;
+							auto end = resultJson.find("\"", pos);
+							std::string className = resultJson.substr(pos, end - pos);
+							pos = resultJson.find("\"confidence\":", end);
+							pos += 13;
+							end = resultJson.find("}", pos);
+							std::string confStr = resultJson.substr(pos, end - pos);
+							CString formatted;
+							formatted.Format(_T("%S (%S%%), "), className.c_str(), confStr.substr(0, 4).c_str());
+							parsedLog += formatted;
+						}
+						parsedLog.TrimRight(_T(", "));
+						AddLog(parsedLog);
+					}
+					catch (...) {
+						AddLog(_T("⚠️ JSON 파싱 중 오류 발생"));
+					}
+				}
+			}
+		}
+		else {
+			AddLog(_T("❌ AI 서버 통신 실패"));
 		}
 
-		switch (i)
-		{
+		switch (i) {
 		case 0: DisplayFrame(frames[i], m_picture); break;
 		case 1: DisplayFrame(frames[i], m_picture1); break;
 		case 2: DisplayFrame(frames[i], m_picture2); break;
@@ -176,6 +166,7 @@ void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 
 	CDialogEx::OnTimer(nIDEvent);
 }
+
 
 void COpenCVWithMFCDlg::DisplayFrame(cv::Mat& frame, CStatic& pictureControl)
 {
@@ -315,4 +306,148 @@ void COpenCVWithMFCDlg::AddLog(const CString& log)
 
 	// 가장 아래로 스크롤
 	m_logBox.LineScroll(m_logBox.GetLineCount());
+}
+
+
+bool COpenCVWithMFCDlg::PostFrameAndGetDetections(const std::string& b64, std::string& outJson)
+{
+	HINTERNET hSession = WinHttpOpen(L"MFCApp", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+	if (!hSession) return false;
+
+	HINTERNET hConnect = WinHttpConnect(hSession, L"127.0.0.1", 5000, 0);
+	if (!hConnect) { WinHttpCloseHandle(hSession); return false; }
+
+	HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"POST", L"/api/detect",
+		NULL, WINHTTP_NO_REFERER,
+		WINHTTP_DEFAULT_ACCEPT_TYPES,
+		0);
+	if (!hRequest) { WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession); return false; }
+
+	std::string body = "{\"image\":\"data:image/jpeg;base64," + b64 + "\"}";
+	BOOL bResults = WinHttpSendRequest(hRequest,
+		L"Content-Type: application/json\r\n", -1L,
+		(LPVOID)body.c_str(), (DWORD)body.length(), (DWORD)body.length(), 0);
+
+	if (!bResults || !WinHttpReceiveResponse(hRequest, NULL)) {
+		WinHttpCloseHandle(hRequest); WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession);
+		return false;
+	}
+
+	DWORD dwSize = 0;
+	std::string response;
+	do {
+		DWORD dwDownloaded = 0;
+		WinHttpQueryDataAvailable(hRequest, &dwSize);
+		if (!dwSize) break;
+
+		std::vector<char> buffer(dwSize + 1);
+		ZeroMemory(buffer.data(), dwSize + 1);
+
+		WinHttpReadData(hRequest, buffer.data(), dwSize, &dwDownloaded);
+		response.append(buffer.data(), dwDownloaded);
+	} while (dwSize > 0);
+
+	outJson = response;
+
+	WinHttpCloseHandle(hRequest);
+	WinHttpCloseHandle(hConnect);
+	WinHttpCloseHandle(hSession);
+
+	return true;
+}
+
+// Base64 인코딩 (표준)
+static const std::string base64_chars =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz"
+"0123456789+/";
+
+std::string COpenCVWithMFCDlg::Base64Encode(const std::vector<uchar>& buf)
+{
+	std::string result;
+	int i = 0;
+	int j = 0;
+	unsigned char char_array_3[3];
+	unsigned char char_array_4[4];
+
+	int in_len = static_cast<int>(buf.size());
+	const unsigned char* bytes_to_encode = buf.data();
+
+	while (in_len--) {
+		char_array_3[i++] = *(bytes_to_encode++);
+		if (i == 3) {
+			char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+			char_array_4[1] = ((char_array_3[0] & 0x03) << 4) +
+				((char_array_3[1] & 0xf0) >> 4);
+			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) +
+				((char_array_3[2] & 0xc0) >> 6);
+			char_array_4[3] = char_array_3[2] & 0x3f;
+
+			for (i = 0; i < 4; i++)
+				result += base64_chars[char_array_4[i]];
+			i = 0;
+		}
+	}
+
+	if (i)
+	{
+		for (j = i; j < 3; j++)
+			char_array_3[j] = '\0';
+
+		char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+		char_array_4[1] = ((char_array_3[0] & 0x03) << 4) +
+			((char_array_3[1] & 0xf0) >> 4);
+		char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) +
+			((char_array_3[2] & 0xc0) >> 6);
+		char_array_4[3] = char_array_3[2] & 0x3f;
+
+		for (j = 0; j < i + 1; j++)
+			result += base64_chars[char_array_4[j]];
+
+		while (i++ < 3)
+			result += '=';
+	}
+
+	return result;
+}
+
+std::string COpenCVWithMFCDlg::EncodeMatToBase64(const cv::Mat& mat)
+{
+	std::vector<uchar> buf;
+	cv::imencode(".jpg", mat, buf);
+	return Base64Encode(buf);
+}
+
+
+void COpenCVWithMFCDlg::OnPaint()
+{
+	if (IsIconic())
+	{
+		CPaintDC dc(this);
+		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
+		int cxIcon = GetSystemMetrics(SM_CXICON);
+		int cyIcon = GetSystemMetrics(SM_CYICON);
+		CRect rect;
+		GetClientRect(&rect);
+		int x = (rect.Width() - cxIcon + 1) / 2;
+		int y = (rect.Height() - cyIcon + 1) / 2;
+		dc.DrawIcon(x, y, m_hIcon);
+	}
+	else
+	{
+		CDialogEx::OnPaint();
+	}
+}
+
+HCURSOR COpenCVWithMFCDlg::OnQueryDragIcon()
+{
+	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void COpenCVWithMFCDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	// 여기에 추가적인 리소스 해제 코드가 있다면 삽입
 }
