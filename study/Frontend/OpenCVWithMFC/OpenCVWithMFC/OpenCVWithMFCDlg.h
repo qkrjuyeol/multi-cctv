@@ -51,15 +51,22 @@ public:
 
 private:
 	void DisplayFrame(cv::Mat& frame, CStatic& pictureControl);
-	void ToggleZoom(int index); // ToggleZoom() 함수 선언 추가
+	void ToggleZoom(int index);
 	void AddLog(const CString& log);
 
-	std::vector<cv::VideoCapture> captures; // 여러 개의 비디오 스트림
-	std::vector<std::string> streamURLs;    // CCTV 스트림 URL 저장
-	std::array<CRect, 4> originalRects;     // 원래 크기 저장
-	bool isZoomed[4] = { false, false, false, false }; // 각 CCTV 화면의 확대 상태 저장
-	CStatic* camViews[4]; // 4개의 카메라 뷰를 저장하는 배열
+	std::vector<cv::VideoCapture> captures;
+	std::vector<std::string> streamURLs;
+	std::array<CRect, 4> originalRects;
+	bool isZoomed[4] = { false, false, false, false };
+	CStatic* camViews[4];
 	CEdit m_logBox;
+
+	std::array<ULONGLONG, 4> lastLogTime{}; // ✅ 여기 추가
+
+	std::string EncodeMatToBase64(const cv::Mat& mat);
+	std::string Base64Encode(const std::vector<uchar>& buf);
+	bool PostFrameAndGetDetections(const std::string& b64, std::string& outJson);
+
 public:
 	afx_msg void OnEnChangeLogBox();
 };
