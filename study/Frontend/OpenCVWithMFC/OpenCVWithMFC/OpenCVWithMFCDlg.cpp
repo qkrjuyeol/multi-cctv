@@ -67,6 +67,7 @@ BEGIN_MESSAGE_MAP(COpenCVWithMFCDlg, CDialogEx)
 	ON_STN_CLICKED(IDC_PICTURE2, &COpenCVWithMFCDlg::OnClickedPicture2)
 	ON_STN_CLICKED(IDC_PICTURE3, &COpenCVWithMFCDlg::OnClickedPicture3)
 	ON_STN_CLICKED(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnStnClickedLogBox)
+	ON_EN_CHANGE(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnEnChangeLogBox)
 END_MESSAGE_MAP()
 
 // COpenCVWithMFCDlg 메시지 처리기
@@ -81,7 +82,7 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 	m_picture1.GetWindowRect(&originalRects[1]);
 	m_picture2.GetWindowRect(&originalRects[2]);
 	m_picture3.GetWindowRect(&originalRects[3]);
-
+	
 	camViews[0] = &m_picture;
 	camViews[1] = &m_picture1;
 	camViews[2] = &m_picture2;
@@ -93,10 +94,10 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 	ScreenToClient(&originalRects[3]);
 
 	streamURLs = {
-		"http://cctvsec.ktict.co.kr/138/7ZIeMPWKXQSsPPtEk/L7cZD32MojYyR+t2aPMLmTGIvQwu3zmjLddC2Kk6HC2YxjLZtdOIAiAEpLComas04c/IcJ9jNGE5Bx51hdStrzVl0=",
-		"http://cctvsec.ktict.co.kr/139/YdKKm/oXGB3YG8GJZiiEZUcYFycOZHiyC5eDZjSz6u5xVq1J1yi/pMC78nJ4+8eDlOOBw+/Xd+pjatRk5d20oC7Alc2wqHQc+7ZYJvrR/Hg=",
-		"http://cctvsec.ktict.co.kr/141/9NZjrrlOAEqKrjdlyKbr6j4jpGkg2cKZq1x5xc1BiakObXU1o2B8j978DWJpUKIrFecaj3D699UWlvCPYjg71MgyAoqpZOQk8TjPqyq8sCM=",
-		"http://cctvsec.ktict.co.kr/2060/KvR9/XSs58LVgCeJEdoCjnaRVu53Rg2kqseQsB6HwtzweyNenOcXwQoIkzMM7qVQQd1YhFrV9WwP75W+jb/JnJ//n4j4C66RsPlDBPMep4M="
+		"http://cctvsec.ktict.co.kr/138/7ZIeMPWKXQSsPPtEk/L7cZD32MojYyR+t2aPMLmTGIvQwu3zmjLddC2Kk6HC2YxjOCSCVQKWWXhTMfhCN04IpLFrp9SsFjugmTvIrOup4UQ=",
+		"http://cctvsec.ktict.co.kr/139/YdKKm/oXGB3YG8GJZiiEZUcYFycOZHiyC5eDZjSz6u5xVq1J1yi/pMC78nJ4+8eDR8wIiGY067VDSRbjc0d2BaajVq7ouf2rv5oMulaStQE=",
+		"http://cctvsec.ktict.co.kr/140/9dggZLtg9LWod5ZJkJFGVdqiKffMaVPJ+nmBjWG2+LfsRvbWChpl7/79K6Yh/bFxLN+1YFpeGU906+aT8f4VI3QYtSEnbmBZWG4UT9Rp8Rg=",
+		"http://cctvsec.ktict.co.kr/141/9NZjrrlOAEqKrjdlyKbr6j4jpGkg2cKZq1x5xc1BiakObXU1o2B8j978DWJpUKIrh+whdm93KhzEwjTb659qLktnrqxOdemGFC0PR82c1II="
 	};
 
 	for (const auto& url : streamURLs)
@@ -252,24 +253,28 @@ void COpenCVWithMFCDlg::ToggleZoom(int index)
 void COpenCVWithMFCDlg::OnClickedPicture() 
 {
 	std::cout << "Picture clicked!" << std::endl;  // 디버깅용 출력
+	AddLog(_T("첫 번째 화면이 클릭되었습니다."));
 	ToggleZoom(0);
 }
 
 void COpenCVWithMFCDlg::OnClickedPicture1()
 {
 	std::cout << "Picture clicked1!" << std::endl;  // 디버깅용 출력
+	AddLog(_T("두 번째 화면이 클릭되었습니다."));
 	ToggleZoom(1);
 }
 
 void COpenCVWithMFCDlg::OnClickedPicture2()
 {
 	std::cout << "Picture clicked2!" << std::endl;  // 디버깅용 출력
+	AddLog(_T("세 번째 화면이 클릭되었습니다."));
 	ToggleZoom(2);
 }
 
 void COpenCVWithMFCDlg::OnClickedPicture3()
 {
 	std::cout << "Picture clicked3!" << std::endl;  // 디버깅용 출력
+	AddLog(_T("네 번째 화면이 클릭되었습니다."));
 	ToggleZoom(3);
 }
 
@@ -288,4 +293,26 @@ void COpenCVWithMFCDlg::OnStnClickedLogBox()
 	// 로그 박스를 클릭했을 때의 동작을 구현
 	// 예시: 로그를 출력하는 대화 상자 열기
 	AfxMessageBox(_T("Log box clicked!"));
+}
+
+void COpenCVWithMFCDlg::OnEnChangeLogBox()
+{
+	// TODO:  RICHEDIT 컨트롤인 경우, 이 컨트롤은
+	// CDialogEx::OnInitDialog() 함수를 재지정 
+	//하고 마스크에 OR 연산하여 설정된 ENM_CHANGE 플래그를 지정하여 CRichEditCtrl().SetEventMask()를 호출하지 않으면
+	// 이 알림 메시지를 보내지 않습니다.
+
+	// TODO:  여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}
+
+void COpenCVWithMFCDlg::AddLog(const CString& log)
+{
+	CString currentText;
+	m_logBox.GetWindowText(currentText);
+
+	currentText += log + _T("\r\n");
+	m_logBox.SetWindowText(currentText);
+
+	// 가장 아래로 스크롤
+	m_logBox.LineScroll(m_logBox.GetLineCount());
 }

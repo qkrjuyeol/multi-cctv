@@ -52,11 +52,14 @@ public:
 private:
 	void DisplayFrame(cv::Mat& frame, CStatic& pictureControl);
 	void ToggleZoom(int index); // ToggleZoom() 함수 선언 추가
+	void AddLog(const CString& log);
 
 	std::vector<cv::VideoCapture> captures; // 여러 개의 비디오 스트림
 	std::vector<std::string> streamURLs;    // CCTV 스트림 URL 저장
 	std::array<CRect, 4> originalRects;     // 원래 크기 저장
 	bool isZoomed[4] = { false, false, false, false }; // 각 CCTV 화면의 확대 상태 저장
 	CStatic* camViews[4]; // 4개의 카메라 뷰를 저장하는 배열
-	CStatic m_logBox;
+	CEdit m_logBox;
+public:
+	afx_msg void OnEnChangeLogBox();
 };
