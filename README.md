@@ -18,6 +18,7 @@
 - 3월 24일() 작성자: 
 - 4월 04일(https://www.notion.so/4-4-1cb458dfe18b80b5a046d5b7ff3d497b) 작성자: 박주열
 - 4월 07일() 작성자: 
+- 4월 25일(https://www.notion.so/4-25-1e0458dfe18b80bfa04cc195ee610a78) 작성자: 박주열열
 
 ## 팀원
 ### Front
