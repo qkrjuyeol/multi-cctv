@@ -1,4 +1,4 @@
-﻿// OpenCVWithMFCDlg.cpp: 구현 파일
+// OpenCVWithMFCDlg.cpp: 구현 파일
 
 #include "pch.h"
 #include "framework.h"
@@ -205,31 +205,66 @@ void COpenCVWithMFCDlg::ToggleZoom(int index)
 {
 	if (isZoomed[index])
 	{
-		// ✅ 원래 크기로 복원
+		// 원래 크기로 복원
 		for (int i = 0; i < 4; i++)
 		{
 			camViews[i]->MoveWindow(&originalRects[i]);
-			camViews[i]->ShowWindow(SW_SHOW);  // 숨겼던 화면 다시 표시
+			camViews[i]->ShowWindow(SW_SHOW);
 		}
 	}
 	else
 	{
-		// ✅ 다이얼로그 전체 크기 가져오기
 		CRect dialogRect;
 		GetClientRect(&dialogRect);
 
-		// ✅ 텍스트 박스(`IDC_LOG_BOX`)의 위치를 가져오기
-		CRect logBoxRect;
-		m_logBox.GetWindowRect(&logBoxRect);
-		ScreenToClient(&logBoxRect); // 다이얼로그 좌표계로 변환
+		CRect baseRect = originalRects[index];
+		const float zoomFactor = 2.0f;
 
-		// ✅ 클릭한 화면을 텍스트 박스를 제외한 영역으로 확대
-		CRect zoomRect = dialogRect;
-		zoomRect.right = logBoxRect.left - 10;  // 텍스트 박스를 침범하지 않도록 조정
+		int newWidth = static_cast<int>(baseRect.Width() * zoomFactor);
+		int newHeight = static_cast<int>(baseRect.Height() * zoomFactor);
+
+		CRect zoomRect;
+
+		switch (index)
+		{
+		case 0: // 왼쪽 위 기준 (기본)
+			zoomRect.left = baseRect.left;
+			zoomRect.top = baseRect.top;
+			zoomRect.right = baseRect.left + newWidth;
+			zoomRect.bottom = baseRect.top + newHeight;
+			break;
+
+		case 1: // 오른쪽 위 기준
+			zoomRect.right = baseRect.right;
+			zoomRect.top = baseRect.top;
+			zoomRect.left = baseRect.right - newWidth;
+			zoomRect.bottom = baseRect.top + newHeight;
+			break;
+
+		case 2: // 왼쪽 아래 기준
+			zoomRect.left = baseRect.left;
+			zoomRect.bottom = baseRect.bottom;
+			zoomRect.right = baseRect.left + newWidth;
+			zoomRect.top = baseRect.bottom - newHeight;
+			break;
+
+		case 3: // 오른쪽 아래 기준
+			zoomRect.right = baseRect.right;
+			zoomRect.bottom = baseRect.bottom;
+			zoomRect.left = baseRect.right - newWidth;
+			zoomRect.top = baseRect.bottom - newHeight;
+			break;
+		}
+
+		// 다이얼로그 범위를 넘지 않도록 조정
+		if (zoomRect.left < 0) zoomRect.left = 0;
+		if (zoomRect.top < 0) zoomRect.top = 0;
+		if (zoomRect.right > dialogRect.right) zoomRect.right = dialogRect.right;
+		if (zoomRect.bottom > dialogRect.bottom) zoomRect.bottom = dialogRect.bottom;
 
 		camViews[index]->MoveWindow(&zoomRect);
 
-		// ✅ 나머지 카메라는 숨기기
+		// 다른 카메라 숨기기
 		for (int i = 0; i < 4; i++)
 		{
 			if (i != index)
@@ -239,6 +274,8 @@ void COpenCVWithMFCDlg::ToggleZoom(int index)
 
 	isZoomed[index] = !isZoomed[index];
 }
+
+
 
 
 void COpenCVWithMFCDlg::OnClickedPicture() 
