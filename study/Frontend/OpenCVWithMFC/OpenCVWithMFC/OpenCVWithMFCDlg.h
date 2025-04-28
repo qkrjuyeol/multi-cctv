@@ -1,4 +1,4 @@
-﻿// OpenCVWithMFCDlg.h: 헤더 파일
+// OpenCVWithMFCDlg.h: 헤더 파일
 //
 
 #pragma once
