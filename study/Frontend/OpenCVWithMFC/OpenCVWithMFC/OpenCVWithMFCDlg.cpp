@@ -22,13 +22,17 @@ BEGIN_MESSAGE_MAP(COpenCVWithMFCDlg, CDialogEx)
    ON_STN_CLICKED(IDC_PICTURE3, &COpenCVWithMFCDlg::OnClickedPicture3)
    ON_STN_CLICKED(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnStnClickedLogBox)
    ON_EN_CHANGE(IDC_LOG_BOX, &COpenCVWithMFCDlg::OnEnChangeLogBox)
+   ON_MESSAGE(WM_APP + 1, &COpenCVWithMFCDlg::OnAddLogMessage) // 추가!
 END_MESSAGE_MAP()
 
+// CAboutDlg
 class CAboutDlg : public CDialogEx
 {
 public:
    CAboutDlg();
+#ifdef AFX_DESIGN_TIME
    enum { IDD = IDD_ABOUTBOX };
+#endif
 protected:
    virtual void DoDataExchange(CDataExchange* pDX);
    DECLARE_MESSAGE_MAP()
@@ -38,11 +42,11 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX) { CDialogEx::DoDataExchange(p
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
-COpenCVWithMFCDlg::COpenCVWithMFCDlg(CWnd* pParent)
+// COpenCVWithMFCDlg 생성
+COpenCVWithMFCDlg::COpenCVWithMFCDlg(CWnd* pParent /*=nullptr*/)
    : CDialogEx(IDD_OPENCVWITHMFC_DIALOG, pParent)
 {
    m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-   lastLogTime.fill(0); // 로그 타임 초기화
 }
 
 void COpenCVWithMFCDlg::DoDataExchange(CDataExchange* pDX)
@@ -54,12 +58,15 @@ void COpenCVWithMFCDlg::DoDataExchange(CDataExchange* pDX)
    DDX_Control(pDX, IDC_PICTURE3, m_picture3);
 }
 
+// ... (헤더 파일 include 및 BEGIN_MESSAGE_MAP 등 기존 그대로)
+
 BOOL COpenCVWithMFCDlg::OnInitDialog()
 {
    CDialogEx::OnInitDialog();
 
    m_logBox.SubclassDlgItem(IDC_LOG_BOX, this);
 
+   // 4개 CCTV 스트림 여는 부분 유지
    m_picture.GetWindowRect(&originalRects[0]);
    m_picture1.GetWindowRect(&originalRects[1]);
    m_picture2.GetWindowRect(&originalRects[2]);
@@ -74,7 +81,10 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
    ScreenToClient(&originalRects[3]);
 
    streamURLs = {
-      "URL1", "URL2", "URL3", "URL4"
+      "http://cctvsec.ktict.co.kr/138/7ZIeMPWKXQSsPPtEk/L7cZD32MojYyR+t2aPMLmTGIvQwu3zmjLddC2Kk6HC2Yxj9OSFCVMpC/8+aU+vzwMsFBMkjpQnnxVKaUQo+7ilJFQ=",
+      "http://cctvsec.ktict.co.kr/139/YdKKm/oXGB3YG8GJZiiEZUcYFycOZHiyC5eDZjSz6u5xVq1J1yi/pMC78nJ4+8eDIxBPqyCqMvUEXx0sktsUw/4zpvM3RfxAK7dtUsauaEw=",
+      "http://cctvsec.ktict.co.kr/141/9NZjrrlOAEqKrjdlyKbr6j4jpGkg2cKZq1x5xc1BiakObXU1o2B8j978DWJpUKIrTXi0AcU3L/tnfVrr8OuRvLaRRhqf+hQ5rZETfsfM1ug=",
+      "http://cctvsec.ktict.co.kr/2063/pbJHCVG8hMX6Wub3IurZFG2nkEWOKpsNDjgv6ZV5NLLIvKHQEJOV/q8n4HiMuC2nvdRvyYZETZQLR0Bpx0QJ6Fsim7JjipZ0+F+5XsL3Ozk="
    };
 
    for (const auto& url : streamURLs)
@@ -89,65 +99,86 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
       captures.push_back(std::move(cap));
    }
 
-   SetTimer(1000, 30, NULL); // 30ms마다 모든 작업(영상+로그)
+   SetTimer(1000, 30, NULL); // 30ms 주기로 영상 갱신
+
+   // --- (여기부터) 로그 쓰레드 ---
+   stopLogThread = false;
+   logThread = std::thread([this]() {
+      while (!stopLogThread) {
+         Sleep(5000); // 5초마다
+
+         // 여기서는 "파일"을 읽음
+         cv::Mat img = cv::imread("C:\\path\\to\\your\\image.jpg");  // ✅ 이미지 경로
+         if (img.empty()) {
+            AfxMessageBox(_T("이미지를 불러올 수 없습니다."));
+            continue;
+         }
+
+         std::string base64 = EncodeMatToBase64(img);
+         std::string resultJson;
+         if (PostFrameAndGetDetections(base64, resultJson)) {
+            if (resultJson.find("\"detections\":[]") == std::string::npos) {
+               CString* pLog = new CString;
+               pLog->Format(_T("이미지 분석 결과: "));
+
+               std::string::size_type pos = 0;
+               while ((pos = resultJson.find("{\"class\":\"", pos)) != std::string::npos) {
+                  pos += 10;
+                  auto end = resultJson.find("\"", pos);
+                  std::string className = resultJson.substr(pos, end - pos);
+                  pos = resultJson.find("\"confidence\":", end);
+                  pos += 13;
+                  end = resultJson.find("}", pos);
+                  std::string confStr = resultJson.substr(pos, end - pos);
+
+                  CString formatted;
+                  formatted.Format(_T("%S (%.0f%%), "), className.c_str(), std::stof(confStr) * 100);
+                  *pLog += formatted;
+               }
+               pLog->TrimRight(_T(", "));
+               PostMessage(WM_APP + 1, (WPARAM)pLog);
+            }
+         }
+      }
+      });
 
    return TRUE;
 }
 
+void COpenCVWithMFCDlg::OnDestroy()
+{
+   CDialogEx::OnDestroy();
+   stopLogThread = true;
+   if (logThread.joinable())
+      logThread.join();
+}
+
 void COpenCVWithMFCDlg::OnTimer(UINT_PTR nIDEvent)
 {
-   time_t now = time(nullptr);
-
+   // 4개 CCTV 영상 실시간 표시
    for (size_t i = 0; i < captures.size(); i++)
    {
       if (!captures[i].isOpened()) continue;
+
       cv::Mat frame;
       captures[i].read(frame);
       if (frame.empty()) continue;
 
-      DisplayFrame(frame, *camViews[i]);
-
-      // 로그 출력은 5초에 1번만
-      if (now - lastLogTime[i] >= 5) {
-         lastLogTime[i] = now;
-
-         std::string base64 = EncodeMatToBase64(frame);
-         std::string resultJson;
-         if (PostFrameAndGetDetections(base64, resultJson)) {
-            if (resultJson.find("\"detections\":[]") == std::string::npos) {
-               try {
-                  CString parsedLog;
-                  parsedLog.Format(_T("#%d 카메라: "), (int)i + 1);
-                  std::string::size_type pos = 0;
-                  while ((pos = resultJson.find("{\"class\":\"", pos)) != std::string::npos) {
-                     pos += 10;
-                     auto end = resultJson.find("\"", pos);
-                     std::string className = resultJson.substr(pos, end - pos);
-                     pos = resultJson.find("\"confidence\":", end);
-                     pos += 13;
-                     end = resultJson.find("}", pos);
-                     std::string confStr = resultJson.substr(pos, end - pos);
-
-                     CString formatted;
-                     formatted.Format(_T("%S (%.0f%%), "), className.c_str(), std::stof(confStr) * 100);
-                     parsedLog += formatted;
-                  }
-                  parsedLog.TrimRight(_T(", "));
-                  AddLog(parsedLog);
-               }
-               catch (...) {
-                  AddLog(_T("⚠️ JSON 파싱 중 오류 발생"));
-               }
-            }
-         }
+      switch (i) {
+      case 0: DisplayFrame(frame, m_picture); break;
+      case 1: DisplayFrame(frame, m_picture1); break;
+      case 2: DisplayFrame(frame, m_picture2); break;
+      case 3: DisplayFrame(frame, m_picture3); break;
       }
    }
    CDialogEx::OnTimer(nIDEvent);
 }
 
+
 void COpenCVWithMFCDlg::DisplayFrame(cv::Mat& frame, CStatic& pictureControl)
 {
    if (frame.empty()) return;
+
    CRect rect;
    pictureControl.GetClientRect(&rect);
    cv::Mat frameRGB;
@@ -156,6 +187,7 @@ void COpenCVWithMFCDlg::DisplayFrame(cv::Mat& frame, CStatic& pictureControl)
 
    CImage cimage_mfc;
    cimage_mfc.Create(frameRGB.cols, frameRGB.rows, 24);
+
    uchar* pBuffer = (uchar*)cimage_mfc.GetBits();
    int step = cimage_mfc.GetPitch();
    for (int y = 0; y < frameRGB.rows; y++)
@@ -458,4 +490,3 @@ HCURSOR COpenCVWithMFCDlg::OnQueryDragIcon()
 {
    return static_cast<HCURSOR>(m_hIcon);
 }
-
