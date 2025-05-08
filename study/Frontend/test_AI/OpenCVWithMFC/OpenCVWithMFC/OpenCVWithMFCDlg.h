@@ -53,7 +53,8 @@ private:
 	void AddLog(const CString& log);
 	std::string EncodeMatToBase64(const cv::Mat& mat);
 	std::string Base64Encode(const std::vector<uchar>& buf);
-	bool PostFrameAndGetDetections(const std::string& b64, std::string& outJson);
+	bool PostFrameAndGetDetections(const std::string& b64, const std::string& camera_id, std::string& outJson);
+
 
 	std::vector<cv::VideoCapture> captures;
 	std::vector<std::string> streamURLs;
