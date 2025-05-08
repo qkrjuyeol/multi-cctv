@@ -80,10 +80,10 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 	ScreenToClient(&originalRects[3]);
 
 	streamURLs = {
-		"http://cctvsec.ktict.co.kr/8553/L6ouPHlXOysHv4BlVqI82nkiH+AmDAtz263C3hPjIe+UCS76YMGAiloQVnqpn2YtPxs1ZXuwzq3bYNfkYXgSjtQAoqKY1ZplqCfTwcqTqQM=",
-		"http://cctvsec.ktict.co.kr/8554/cOkcOOv8XkBcqkUcp20G+yLExUcWQMk6tFLZGaEeAJJ1UXgK8jaHkE3bGNYFvL9vNtv9uo1Ww3O899sdOCNr5nBh/ITean2gajJyS/Z7l2Q=",
-		"http://cctvsec.ktict.co.kr/95180/4H4WueI96PPibJW3Ru3+hjvkuZmlQZRoM4q4SAcQww9AiSGQvbI9+kQZQXjxo/iZBKZvef8sXg7RNHqTADn4qS6lZYDCs043eCCEnkuGbXg=",
-		"http://cctvsec.ktict.co.kr/95186/4uRjiTeOP+MlVg7IpzQotBceAIMhDdn/hDxYgs3Xkyo7zPh5aVE4AQAN4kcOSi+2gCPYqyq8YEfqMXXUGxANedwcCkePwxeHPSCMfIuWlxY="
+		"http://cctvsec.ktict.co.kr/138/7ZIeMPWKXQSsPPtEk/L7cZD32MojYyR+t2aPMLmTGIvQwu3zmjLddC2Kk6HC2YxjKlH3YRFhye5D8B5rig5ipoegghfAQLZW6C9cKi89GEY=",
+		"http://cctvsec.ktict.co.kr/139/YdKKm/oXGB3YG8GJZiiEZUcYFycOZHiyC5eDZjSz6u5xVq1J1yi/pMC78nJ4+8eDki3A638u6CI5Y5OK4Yzeq7cySB4Ce2iSAZD3ZZcYJbg=",
+		"http://cctvsec.ktict.co.kr/140/9dggZLtg9LWod5ZJkJFGVdqiKffMaVPJ+nmBjWG2+LfsRvbWChpl7/79K6Yh/bFxIAmLZ1g542e4+CqizmOqyPA/kRtJwSJjxQ6eQHkemU8=",
+		"http://cctvsec.ktict.co.kr/141/9NZjrrlOAEqKrjdlyKbr6j4jpGkg2cKZq1x5xc1BiakObXU1o2B8j978DWJpUKIrJo31pYdgirhL6TCrUcFua8h3RBU0mosiBeVIk8jvbRo="
 	};
 
 	for (const auto& url : streamURLs)
@@ -111,14 +111,20 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 					continue;
 
 				cv::Mat frame;
-				captures[i].read(frame);  // ✅ i번 카메라에서 현재 프레임 읽기
+				captures[i].read(frame);
 
 				if (frame.empty())
 					continue;
 
-				std::string base64 = EncodeMatToBase64(frame);  // ✅ 프레임을 Base64로 변환
+				std::string base64 = EncodeMatToBase64(frame);
+
+				// ✅ camera_id 생성 ("cam01" ~ "cam04")
+				std::ostringstream oss;
+				oss << "cam" << std::setfill('0') << std::setw(2) << (i + 1);
+				std::string camera_id = oss.str();
+
 				std::string resultJson;
-				if (PostFrameAndGetDetections(base64, resultJson)) {
+				if (PostFrameAndGetDetections(base64, camera_id, resultJson)) {
 					if (resultJson.find("\"detections\":[]") == std::string::npos) {
 						CString* pLog = new CString;
 						pLog->Format(_T("#%d 카메라 분석 결과: "), (int)i + 1);
@@ -147,6 +153,7 @@ BOOL COpenCVWithMFCDlg::OnInitDialog()
 
 	return TRUE;
 }
+
 
 void COpenCVWithMFCDlg::OnDestroy()
 {
@@ -354,7 +361,7 @@ void COpenCVWithMFCDlg::AddLog(const CString& log)
 }
 
 
-bool COpenCVWithMFCDlg::PostFrameAndGetDetections(const std::string& b64, std::string& outJson)
+bool COpenCVWithMFCDlg::PostFrameAndGetDetections(const std::string& b64, const std::string& camera_id, std::string& outJson)
 {
 	HINTERNET hSession = WinHttpOpen(L"MFCApp", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
 		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
@@ -369,7 +376,10 @@ bool COpenCVWithMFCDlg::PostFrameAndGetDetections(const std::string& b64, std::s
 		0);
 	if (!hRequest) { WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession); return false; }
 
-	std::string body = "{\"image\":\"data:image/jpeg;base64," + b64 + "\"}";
+	// camera_id 포함한 JSON body 생성
+	std::string body = "{\"camera_id\":\"" + camera_id + "\","
+	                   "\"image\":\"data:image/jpeg;base64," + b64 + "\"}";
+
 	BOOL bResults = WinHttpSendRequest(hRequest,
 		L"Content-Type: application/json\r\n", -1L,
 		(LPVOID)body.c_str(), (DWORD)body.length(), (DWORD)body.length(), 0);
@@ -401,6 +411,7 @@ bool COpenCVWithMFCDlg::PostFrameAndGetDetections(const std::string& b64, std::s
 
 	return true;
 }
+
 
 // Base64 인코딩 (표준)
 static const std::string base64_chars =
