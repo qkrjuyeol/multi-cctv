@@ -17,3 +17,7 @@ response = requests.get(url, params=params)
 
 root = ET.fromstring(response.text)
 for data in root.findall('data'):
+    name = data.findtext('cctvname')
+    cctv_url = data.findtext('cctvurl')
+    cctv_format = data.findtext('cctvformat')
+    print(f"{name} [{cctv_format}]: {cctv_url}")
