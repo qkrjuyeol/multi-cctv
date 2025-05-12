@@ -1,6 +1,0 @@
-C:\Download\project\cctvproject\cctv_4\x64\Debug\avcodec-61.dll
-C:\Download\project\cctvproject\cctv_4\x64\Debug\swresample-5.dll
-C:\Download\project\cctvproject\cctv_4\x64\Debug\avutil-59.dll
-C:\Download\project\cctvproject\cctv_4\x64\Debug\avformat-61.dll
-C:\Download\project\cctvproject\cctv_4\x64\Debug\swscale-8.dll
-C:\Download\project\cctvproject\cctv_4\cctv_4\x64\Debug\cctv_4.vcxproj.Up2Date
