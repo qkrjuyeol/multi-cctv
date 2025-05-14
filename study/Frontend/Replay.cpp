@@ -1,4 +1,4 @@
-﻿// Replay.cpp: 구현 파일
+// Replay.cpp: 구현 파일
 //
 
 #include "pch.h"
@@ -65,6 +65,7 @@ BOOL Replay::OnInitDialog()
     return TRUE;
 }
 
+
 // 리스트 박스에서 날짜를 선택했을 때 호출되는 함수
 void Replay::OnLbnSelChangeDateList()
 {
@@ -92,7 +93,13 @@ void Replay::OnLbnSelChangeDateList()
             isFirstLine = false; // 헤더는 무시
             continue;
         }
-        m_logListBox.AddString(line);
+        CString time, cam, desc;
+        AfxExtractSubString(time, line, 0, ',');
+        AfxExtractSubString(cam, line, 1, ',');
+        AfxExtractSubString(desc, line, 2, ',');
+
+        CString displayLine = time + _T("    ") + cam + _T("    ") + desc;
+        m_logListBox.AddString(displayLine);
     }
 
     file.Close();
