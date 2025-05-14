@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "afxdialogex.h"
 
 // Replay 대화 상자
@@ -27,6 +27,7 @@ protected:
 		
 public:
 	CListBox m_dateListBox;       // 날짜 리스트 박스
+	CStringArray m_fullFileNames;  // 전체 파일명 저장
 	CListBox m_logListBox;        // 로그 출력용 에디트
 	CString m_selectedCsvFile;    // 선택된 CSV 파일 이름
 	CString m_csvFolderPath;      // CSV 경로
