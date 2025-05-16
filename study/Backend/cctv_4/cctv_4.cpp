@@ -8,7 +8,7 @@
 #include <chrono>
 #include <future>
 #include <map>
-#include <algorithm>  // std::max ÇÔ¼ö¸¦ »ç¿ëÇÏ±â À§ÇØ ÇÊ¿ä
+#include <algorithm>  // std::max í•¨ìˆ˜ë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•´ í•„ìš”
 
 #ifdef _WIN32
 #include <windows.h>
@@ -25,27 +25,27 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-// Àü¹æ ¼±¾ğ
+// ì „ë°© ì„ ì–¸
 class ONVIFCameraRecorder;
 
-// ONVIF Ä«¸Ş¶ó ¼³Á¤ ±¸Á¶Ã¼ - ÃÖÀûÈ­µÈ ±âº»°ª Àû¿ë
+// ONVIF ì¹´ë©”ë¼ ì„¤ì • êµ¬ì¡°ì²´ - ìµœì í™”ëœ ê¸°ë³¸ê°’ ì ìš©
 struct ONVIFCameraConfig {
-    std::string name;           // Ä«¸Ş¶ó ½Äº° ÀÌ¸§
-    std::string ip;             // IP ÁÖ¼Ò
-    int port;                   // RTSP Æ÷Æ® (º¸Åë 554)
-    std::string username;       // »ç¿ëÀÚ ÀÌ¸§
-    std::string password;       // ºñ¹Ğ¹øÈ£
-    std::string rtspPath;       // RTSP °æ·Î (ONVIF °Ë»öÀ¸·Î ¾ò°Å³ª ¼öµ¿ ¼³Á¤)
-    std::string outputDir;      // ³ìÈ­ ÆÄÀÏ ÀúÀå µğ·ºÅä¸®
-    int width;                  // Ãâ·Â ºñµğ¿À ³Êºñ
-    int height;                 // Ãâ·Â ºñµğ¿À ³ôÀÌ
-    int fps;                    // ÇÁ·¹ÀÓ ·¹ÀÌÆ®
-    int bitrate;                // ºñÆ®·¹ÀÌÆ® (bps)
-    int segmentDuration;        // ¼¼±×¸ÕÆ® ±æÀÌ (ÃÊ, 0 = ºĞÇÒ ¾øÀ½)
-    std::string preset;         // ÀÎÄÚµù ÇÁ¸®¼Â (ultrafast, veryfast, fast µî)
-    bool dayNightMode;          // ÁÖ/¾ß°£ ¸ğµå ÀÚµ¿ ÀüÈ¯ »ç¿ë ¿©ºÎ
+    std::string name;           // ì¹´ë©”ë¼ ì‹ë³„ ì´ë¦„
+    std::string ip;             // IP ì£¼ì†Œ
+    int port;                   // RTSP í¬íŠ¸ (ë³´í†µ 554)
+    std::string username;       // ì‚¬ìš©ì ì´ë¦„
+    std::string password;       // ë¹„ë°€ë²ˆí˜¸
+    std::string rtspPath;       // RTSP ê²½ë¡œ (ONVIF ê²€ìƒ‰ìœ¼ë¡œ ì–»ê±°ë‚˜ ìˆ˜ë™ ì„¤ì •)
+    std::string outputDir;      // ë…¹í™” íŒŒì¼ ì €ì¥ ë””ë ‰í† ë¦¬
+    int width;                  // ì¶œë ¥ ë¹„ë””ì˜¤ ë„ˆë¹„
+    int height;                 // ì¶œë ¥ ë¹„ë””ì˜¤ ë†’ì´
+    int fps;                    // í”„ë ˆì„ ë ˆì´íŠ¸
+    int bitrate;                // ë¹„íŠ¸ë ˆì´íŠ¸ (bps)
+    int segmentDuration;        // ì„¸ê·¸ë¨¼íŠ¸ ê¸¸ì´ (ì´ˆ, 0 = ë¶„í•  ì—†ìŒ)
+    std::string preset;         // ì¸ì½”ë”© í”„ë¦¬ì…‹ (ultrafast, veryfast, fast ë“±)
+    bool dayNightMode;          // ì£¼/ì•¼ê°„ ëª¨ë“œ ìë™ ì „í™˜ ì‚¬ìš© ì—¬ë¶€
 
-    // »ı¼ºÀÚ - ÃÖÀûÈ­µÈ ±âº»°ªÀ¸·Î º¯°æ
+    // ìƒì„±ì - ìµœì í™”ëœ ê¸°ë³¸ê°’ìœ¼ë¡œ ë³€ê²½
     ONVIFCameraConfig(
         const std::string& _name,
         const std::string& _ip,
@@ -54,49 +54,49 @@ struct ONVIFCameraConfig {
         const std::string& _password = "",
         const std::string& _rtspPath = "rtsp://127.0.0.1:8554/test",
         const std::string& _outputDir = "C:/Download/savedfiles",
-        int _width = 640,            // ³·Àº ÇØ»óµµ·Î º¯°æ (854->640)
-        int _height = 360,           // ³·Àº ÇØ»óµµ·Î º¯°æ (480->360)
-        int _fps = 30,               // ³·Àº ÇÁ·¹ÀÓ ·¹ÀÌÆ®·Î º¯°æ (30)
-        int _bitrate = 2000000,      // ³·Àº ºñÆ®·¹ÀÌÆ®·Î º¯°æ (4M->2M)
-        int _segmentDuration = 600,  // 10ºĞ ¼¼±×¸ÕÆ® (15ÃÊ->600ÃÊ->15ÃÊ)
-        const std::string& _preset = "fast", // ´õ ÁÁÀº ¾ĞÃà·üÀÇ ÇÁ¸®¼ÂÀ¸·Î º¯°æ (ultrafast->fast)
-        bool _dayNightMode = true    // ±âº»ÀûÀ¸·Î ÁÖ/¾ß°£ ¸ğµå È°¼ºÈ­
+        int _width = 640,            // ë‚®ì€ í•´ìƒë„ë¡œ ë³€ê²½ (854->640)
+        int _height = 360,           // ë‚®ì€ í•´ìƒë„ë¡œ ë³€ê²½ (480->360)
+        int _fps = 30,               // ë‚®ì€ í”„ë ˆì„ ë ˆì´íŠ¸ë¡œ ë³€ê²½ (30)
+        int _bitrate = 2000000,      // ë‚®ì€ ë¹„íŠ¸ë ˆì´íŠ¸ë¡œ ë³€ê²½ (4M->2M)
+        int _segmentDuration = 60,  // 10ë¶„ ì„¸ê·¸ë¨¼íŠ¸ (15ì´ˆ->600ì´ˆ->15ì´ˆ)
+        const std::string& _preset = "fast", // ë” ì¢‹ì€ ì••ì¶•ë¥ ì˜ í”„ë¦¬ì…‹ìœ¼ë¡œ ë³€ê²½ (ultrafast->fast)
+        bool _dayNightMode = true    // ê¸°ë³¸ì ìœ¼ë¡œ ì£¼/ì•¼ê°„ ëª¨ë“œ í™œì„±í™”
     ) : name(_name), ip(_ip), port(_port), username(_username), password(_password),
         rtspPath(_rtspPath), outputDir(_outputDir), width(_width), height(_height),
         fps(_fps), bitrate(_bitrate), segmentDuration(_segmentDuration), preset(_preset),
         dayNightMode(_dayNightMode) {
     }
 
-    // RTSP URL »ı¼º
+    // RTSP URL ìƒì„±
     std::string getRtspUrl() const {
         return rtspPath;
     }
 
-    // Ãâ·Â ÆÄÀÏ ÀÌ¸§ »ı¼º
+    // ì¶œë ¥ íŒŒì¼ ì´ë¦„ ìƒì„±
     std::string getOutputFileName(const std::string& suffix = "") const {
-        // ÇöÀç ½Ã°£ ±â¹İ ÆÄÀÏ ÀÌ¸§ »ı¼º
+        // í˜„ì¬ ì‹œê°„ ê¸°ë°˜ íŒŒì¼ ì´ë¦„ ìƒì„±
         auto now = std::chrono::system_clock::now();
         auto time = std::chrono::system_clock::to_time_t(now);
         char timeString[100];
 
 #ifdef _WIN32
-        // Windows¿¡¼­´Â localtime_s »ç¿ë
+        // Windowsì—ì„œëŠ” localtime_s ì‚¬ìš©
         struct tm timeinfo;
         localtime_s(&timeinfo, &time);
         std::strftime(timeString, sizeof(timeString), "%Y%m%d_%H%M%S", &timeinfo);
 #else
-        // Linux/Unix¿¡¼­´Â localtime »ç¿ë
+        // Linux/Unixì—ì„œëŠ” localtime ì‚¬ìš©
         std::strftime(timeString, sizeof(timeString), "%Y%m%d_%H%M%S", std::localtime(&time));
 #endif
 
         return outputDir + "/" + name + "_" + timeString + suffix + ".mp4";
     }
 
-    // ÁÖ/¾ß°£ ¸ğµå¿¡ µû¸¥ ºñÆ®·¹ÀÌÆ® °áÁ¤
+    // ì£¼/ì•¼ê°„ ëª¨ë“œì— ë”°ë¥¸ ë¹„íŠ¸ë ˆì´íŠ¸ ê²°ì •
     int getCurrentBitrate() const {
         if (!dayNightMode) return bitrate;
 
-        // ÇöÀç ½Ã°£ È®ÀÎ
+        // í˜„ì¬ ì‹œê°„ í™•ì¸
         auto now = std::chrono::system_clock::now();
         auto time_point = std::chrono::system_clock::to_time_t(now);
         struct tm timeinfo;
@@ -107,19 +107,19 @@ struct ONVIFCameraConfig {
         timeinfo = *std::localtime(&time_point);
 #endif
 
-        // ¾ß°£ ½Ã°£´ë (22½Ã ~ 06½Ã)¿¡´Â ´õ ³·Àº ºñÆ®·¹ÀÌÆ® »ç¿ë
+        // ì•¼ê°„ ì‹œê°„ëŒ€ (22ì‹œ ~ 06ì‹œ)ì—ëŠ” ë” ë‚®ì€ ë¹„íŠ¸ë ˆì´íŠ¸ ì‚¬ìš©
         if (timeinfo.tm_hour >= 22 || timeinfo.tm_hour < 6) {
-            return bitrate / 2; // ¾ß°£¿¡´Â Àı¹İ ºñÆ®·¹ÀÌÆ®
+            return bitrate / 2; // ì•¼ê°„ì—ëŠ” ì ˆë°˜ ë¹„íŠ¸ë ˆì´íŠ¸
         }
 
-        return bitrate; // ÁÖ°£ ½Ã°£´ë¿¡´Â ¼³Á¤µÈ ºñÆ®·¹ÀÌÆ®
+        return bitrate; // ì£¼ê°„ ì‹œê°„ëŒ€ì—ëŠ” ì„¤ì •ëœ ë¹„íŠ¸ë ˆì´íŠ¸
     }
 
-    // ÁÖ/¾ß°£ ¸ğµå¿¡ µû¸¥ ÇÁ·¹ÀÓ ·¹ÀÌÆ® °áÁ¤
+    // ì£¼/ì•¼ê°„ ëª¨ë“œì— ë”°ë¥¸ í”„ë ˆì„ ë ˆì´íŠ¸ ê²°ì •
     int getCurrentFps() const {
         if (!dayNightMode) return fps;
 
-        // ÇöÀç ½Ã°£ È®ÀÎ
+        // í˜„ì¬ ì‹œê°„ í™•ì¸
         auto now = std::chrono::system_clock::now();
         auto time_point = std::chrono::system_clock::to_time_t(now);
         struct tm timeinfo;
@@ -130,15 +130,15 @@ struct ONVIFCameraConfig {
         timeinfo = *std::localtime(&time_point);
 #endif
 
-        // ¾ß°£ ½Ã°£´ë (22½Ã ~ 06½Ã)¿¡´Â ´õ ³·Àº ÇÁ·¹ÀÓ ·¹ÀÌÆ® »ç¿ë
+        // ì•¼ê°„ ì‹œê°„ëŒ€ (22ì‹œ ~ 06ì‹œ)ì—ëŠ” ë” ë‚®ì€ í”„ë ˆì„ ë ˆì´íŠ¸ ì‚¬ìš©
         if (timeinfo.tm_hour >= 22 || timeinfo.tm_hour < 6) {
-            return max(10, fps / 2); // ¾ß°£¿¡´Â ³·Àº ÇÁ·¹ÀÓ ·¹ÀÌÆ®, ÃÖ¼Ò 10fps
+            return max(10, fps / 2); // ì•¼ê°„ì—ëŠ” ë‚®ì€ í”„ë ˆì„ ë ˆì´íŠ¸, ìµœì†Œ 10fps
         }
 
-        return fps; // ÁÖ°£ ½Ã°£´ë¿¡´Â ¼³Á¤µÈ ÇÁ·¹ÀÓ ·¹ÀÌÆ®
+        return fps; // ì£¼ê°„ ì‹œê°„ëŒ€ì—ëŠ” ì„¤ì •ëœ í”„ë ˆì„ ë ˆì´íŠ¸
     }
 };
-// ÀÎÄÚ´õ Ãâ·ÂÇÏ´Â ÇÔ¼ö
+// ì¸ì½”ë” ì¶œë ¥í•˜ëŠ” í•¨ìˆ˜
 void print_encoders() {
     const AVCodec* codec = nullptr;
     void* iter = nullptr;
@@ -152,7 +152,7 @@ void print_encoders() {
 // Forward declaration of MultiCameraRecorder for cleanupOldRecordings function
 class MultiCameraRecorder;
 
-// Ä«¸Ş¶ó ·¹ÄÚ´õ Å¬·¡½º
+// ì¹´ë©”ë¼ ë ˆì½”ë” í´ë˜ìŠ¤
 class ONVIFCameraRecorder {
 private:
     ONVIFCameraConfig config;
@@ -169,7 +169,7 @@ public:
     ONVIFCameraRecorder(const ONVIFCameraConfig& cfg)
         : config(cfg), isRunning(false), isPaused(false), frameCount(0), errorCount(0) {
 
-        // FFmpeg ³×Æ®¿öÅ© ÃÊ±âÈ­ (ÇÑ ¹ø¸¸ È£ÃâµÇµµ·Ï Á¤ÀûÀ¸·Î ¼³Á¤)
+        // FFmpeg ë„¤íŠ¸ì›Œí¬ ì´ˆê¸°í™” (í•œ ë²ˆë§Œ í˜¸ì¶œë˜ë„ë¡ ì •ì ìœ¼ë¡œ ì„¤ì •)
         static std::once_flag onceFlag;
         std::call_once(onceFlag, []() {
             avformat_network_init();
@@ -180,38 +180,38 @@ public:
         stop();
     }
 
-    // ·¹ÄÚµù ½ÃÀÛ
+    // ë ˆì½”ë”© ì‹œì‘
     bool start() {
         if (isRunning) {
-            std::cout << "[" << config.name << "] ÀÌ¹Ì ½ÇÇà ÁßÀÔ´Ï´Ù." << std::endl;
+            std::cout << "[" << config.name << "] ì´ë¯¸ ì‹¤í–‰ ì¤‘ì…ë‹ˆë‹¤." << std::endl;
             return false;
         }
 
-        // ³ìÈ­ µğ·ºÅä¸® È®ÀÎ ¹× »ı¼º
+        // ë…¹í™” ë””ë ‰í† ë¦¬ í™•ì¸ ë° ìƒì„±
         try {
-            // µğ·ºÅä¸® °æ·Î È®ÀÎ ¹× »ı¼º
+            // ë””ë ‰í† ë¦¬ ê²½ë¡œ í™•ì¸ ë° ìƒì„±
             std::string dirPath = config.outputDir;
 
-            // µğ·ºÅä¸®°¡ Á¸ÀçÇÏ´ÂÁö È®ÀÎÇÏ°í ¾øÀ¸¸é »ı¼º
+            // ë””ë ‰í† ë¦¬ê°€ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸í•˜ê³  ì—†ìœ¼ë©´ ìƒì„±
 #ifdef _WIN32
-            // Windows ½Ã½ºÅÛ ÇÔ¼ö »ç¿ë
+            // Windows ì‹œìŠ¤í…œ í•¨ìˆ˜ ì‚¬ìš©
             if (!CreateDirectoryA(dirPath.c_str(), NULL) && GetLastError() != ERROR_ALREADY_EXISTS) {
-                std::cerr << "µğ·ºÅä¸® »ı¼º ¿À·ù. °æ·Î¸¦ È®ÀÎÇÏ¼¼¿ä: " << dirPath << std::endl;
+                std::cerr << "ë””ë ‰í† ë¦¬ ìƒì„± ì˜¤ë¥˜. ê²½ë¡œë¥¼ í™•ì¸í•˜ì„¸ìš”: " << dirPath << std::endl;
                 return false;
             }
 #else
-            // Linux/Unix ½Ã½ºÅÛ¿ë mkdir »ç¿ë
+            // Linux/Unix ì‹œìŠ¤í…œìš© mkdir ì‚¬ìš©
             int status = mkdir(dirPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
             if (status != 0 && errno != EEXIST) {
-                std::cerr << "µğ·ºÅä¸® »ı¼º ¿À·ù. °æ·Î¸¦ È®ÀÎÇÏ¼¼¿ä: " << dirPath << std::endl;
+                std::cerr << "ë””ë ‰í† ë¦¬ ìƒì„± ì˜¤ë¥˜. ê²½ë¡œë¥¼ í™•ì¸í•˜ì„¸ìš”: " << dirPath << std::endl;
                 return false;
             }
 #endif
-            std::cout << "ÀúÀå µğ·ºÅä¸® È®ÀÎ ¿Ï·á: " << dirPath << std::endl;
+            std::cout << "ì €ì¥ ë””ë ‰í† ë¦¬ í™•ì¸ ì™„ë£Œ: " << dirPath << std::endl;
         }
         catch (const std::exception& e) {
-            std::cerr << "µğ·ºÅä¸® »ı¼º ¿À·ù: " << e.what() << std::endl;
-            std::cerr << "°æ·Î¸¦ È®ÀÎÇÏ¼¼¿ä: " << config.outputDir << std::endl;
+            std::cerr << "ë””ë ‰í† ë¦¬ ìƒì„± ì˜¤ë¥˜: " << e.what() << std::endl;
+            std::cerr << "ê²½ë¡œë¥¼ í™•ì¸í•˜ì„¸ìš”: " << config.outputDir << std::endl;
             return false;
         }
 
@@ -225,7 +225,7 @@ public:
         return true;
     }
 
-    // ·¹ÄÚµù ÁßÁö
+    // ë ˆì½”ë”© ì¤‘ì§€
     void stop() {
         if (isRunning) {
             isRunning = false;
@@ -235,17 +235,17 @@ public:
         }
     }
 
-    // ÀÏ½Ã Á¤Áö
+    // ì¼ì‹œ ì •ì§€
     void pause() {
         isPaused = true;
     }
 
-    // Àç°³
+    // ì¬ê°œ
     void resume() {
         isPaused = false;
     }
 
-    // »óÅÂ Á¶È¸
+    // ìƒíƒœ ì¡°íšŒ
     std::map<std::string, std::string> getStatus() {
         std::lock_guard<std::mutex> lock(statusMutex);
 
@@ -256,9 +256,9 @@ public:
         status["name"] = config.name;
         status["rtsp_url"] = config.getRtspUrl();
         status["current_file"] = currentFileName;
-        status["running_time"] = std::to_string(runningSeconds) + "ÃÊ";
+        status["running_time"] = std::to_string(runningSeconds) + "ì´ˆ";
         status["frames_recorded"] = std::to_string(frameCount);
-        status["state"] = isRunning ? (isPaused ? "ÀÏ½ÃÁ¤Áö" : "³ìÈ­Áß") : "ÁßÁöµÊ";
+        status["state"] = isRunning ? (isPaused ? "ì¼ì‹œì •ì§€" : "ë…¹í™”ì¤‘") : "ì¤‘ì§€ë¨";
         status["error_count"] = std::to_string(errorCount);
         status["current_bitrate"] = std::to_string(config.getCurrentBitrate() / 1000) + " Kbps";
         status["current_fps"] = std::to_string(config.getCurrentFps());
@@ -267,54 +267,54 @@ public:
     }
 
 private:
-    // ·¹ÄÚµù ½º·¹µå ÇÔ¼ö
+    // ë ˆì½”ë”© ìŠ¤ë ˆë“œ í•¨ìˆ˜
     void recordThreadFunc() {
-        std::cout << "[" << config.name << "] Å×½ºÆ® ½ÃÀÛ: " << std::endl;
+        std::cout << "[" << config.name << "] í…ŒìŠ¤íŠ¸ ì‹œì‘: " << std::endl;
         std::cout << "  RTSP URL: " << config.getRtspUrl() << std::endl;
-        std::cout << "  ÀúÀå °æ·Î: " << config.outputDir << std::endl;
-        std::cout << "  ÇØ»óµµ: " << config.width << "x" << config.height << std::endl;
-        std::cout << "  ÇÁ·¹ÀÓ ·¹ÀÌÆ®: " << config.fps << "fps" << std::endl;
-        std::cout << "  ºñÆ®·¹ÀÌÆ®: " << config.bitrate / 1000 << " Kbps" << std::endl;
-        std::cout << "  ÀÎÄÚµù ÇÁ¸®¼Â: " << config.preset << std::endl;
-        std::cout << "  ÁÖ/¾ß°£ ¸ğµå: " << (config.dayNightMode ? "È°¼ºÈ­" : "ºñÈ°¼ºÈ­") << std::endl;
-        std::cout << "[" << config.name << "] ³ìÈ­ ½ÃÀÛ: " << config.getRtspUrl() << std::endl;
+        std::cout << "  ì €ì¥ ê²½ë¡œ: " << config.outputDir << std::endl;
+        std::cout << "  í•´ìƒë„: " << config.width << "x" << config.height << std::endl;
+        std::cout << "  í”„ë ˆì„ ë ˆì´íŠ¸: " << config.fps << "fps" << std::endl;
+        std::cout << "  ë¹„íŠ¸ë ˆì´íŠ¸: " << config.bitrate / 1000 << " Kbps" << std::endl;
+        std::cout << "  ì¸ì½”ë”© í”„ë¦¬ì…‹: " << config.preset << std::endl;
+        std::cout << "  ì£¼/ì•¼ê°„ ëª¨ë“œ: " << (config.dayNightMode ? "í™œì„±í™”" : "ë¹„í™œì„±í™”") << std::endl;
+        std::cout << "[" << config.name << "] ë…¹í™” ì‹œì‘: " << config.getRtspUrl() << std::endl;
 
-        // ÀÔ·Â ÄÁÅØ½ºÆ® ÃÊ±âÈ­
+        // ì…ë ¥ ì»¨í…ìŠ¤íŠ¸ ì´ˆê¸°í™”
         AVFormatContext* inputFormatContext = nullptr;
 
-        // RTSP ¿¬°á ¿É¼Ç ¼³Á¤ - UDP Àü¼Û ¹æ½Ä »ç¿ë
+        // RTSP ì—°ê²° ì˜µì…˜ ì„¤ì • - UDP ì „ì†¡ ë°©ì‹ ì‚¬ìš©
         AVDictionary* options = nullptr;
-        // UDP Àü¼Û ¹æ½Ä ¸í½ÃÀûÀ¸·Î ¼³Á¤
+        // UDP ì „ì†¡ ë°©ì‹ ëª…ì‹œì ìœ¼ë¡œ ì„¤ì •
         av_dict_set(&options, "rtsp_transport", "udp", 0);
         av_dict_set(&options, "max_delay", "500000", 0);
         av_dict_set(&options, "stimeout", "5000000", 0);
         av_dict_set(&options, "reconnect", "1", 0);
         av_dict_set(&options, "reconnect_streamed", "1", 0);
         av_dict_set(&options, "reconnect_delay_max", "5", 0);
-        // UDP ¹öÆÛ Å©±â ¼³Á¤ (ÆĞÅ¶ ¼Õ½Ç ¹æÁö)
-        av_dict_set(&options, "buffer_size", "1024000", 0);  // ¾à 1MB ¹öÆÛ
-        av_dict_set(&options, "reorder_queue_size", "5000", 0);  // ÆĞÅ¶ ÀçÁ¤·Ä Å¥ Å©±â
+        // UDP ë²„í¼ í¬ê¸° ì„¤ì • (íŒ¨í‚· ì†ì‹¤ ë°©ì§€)
+        av_dict_set(&options, "buffer_size", "1024000", 0);  // ì•½ 1MB ë²„í¼
+        av_dict_set(&options, "reorder_queue_size", "5000", 0);  // íŒ¨í‚· ì¬ì •ë ¬ í í¬ê¸°
 
         while (isRunning) {
             try {
-                // RTSP ½ºÆ®¸² ¿­±â - UDP ¹æ½Ä »ç¿ë
-                std::cout << "[" << config.name << "] UDP Àü¼Û ¹æ½ÄÀ¸·Î ¿¬°á ½Ãµµ..." << std::endl;
+                // RTSP ìŠ¤íŠ¸ë¦¼ ì—´ê¸° - UDP ë°©ì‹ ì‚¬ìš©
+                std::cout << "[" << config.name << "] UDP ì „ì†¡ ë°©ì‹ìœ¼ë¡œ ì—°ê²° ì‹œë„..." << std::endl;
                 int ret = avformat_open_input(&inputFormatContext, config.getRtspUrl().c_str(), nullptr, &options);
 
                 if (ret < 0) {
                     char errBuf[AV_ERROR_MAX_STRING_SIZE];
                     av_strerror(ret, errBuf, AV_ERROR_MAX_STRING_SIZE);
-                    throw std::runtime_error("UDP·Î ½ºÆ®¸²À» ¿­ ¼ö ¾ø½À´Ï´Ù: " + std::string(errBuf));
+                    throw std::runtime_error("UDPë¡œ ìŠ¤íŠ¸ë¦¼ì„ ì—´ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: " + std::string(errBuf));
                 }
 
-                std::cout << "[" << config.name << "] UDP Àü¼Û ¹æ½ÄÀ¸·Î ¿¬°á ¼º°ø!" << std::endl;
+                std::cout << "[" << config.name << "] UDP ì „ì†¡ ë°©ì‹ìœ¼ë¡œ ì—°ê²° ì„±ê³µ!" << std::endl;
 
-                // ½ºÆ®¸² Á¤º¸ Ã£±â
+                // ìŠ¤íŠ¸ë¦¼ ì •ë³´ ì°¾ê¸°
                 if (avformat_find_stream_info(inputFormatContext, nullptr) < 0) {
-                    throw std::runtime_error("½ºÆ®¸² Á¤º¸¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ìŠ¤íŠ¸ë¦¼ ì •ë³´ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ºñµğ¿À ½ºÆ®¸² Ã£±â
+                // ë¹„ë””ì˜¤ ìŠ¤íŠ¸ë¦¼ ì°¾ê¸°
                 int videoStreamIndex = -1;
                 for (unsigned int i = 0; i < inputFormatContext->nb_streams; i++) {
                     if (inputFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -324,174 +324,174 @@ private:
                 }
 
                 if (videoStreamIndex == -1) {
-                    throw std::runtime_error("ºñµğ¿À ½ºÆ®¸²À» Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ë¹„ë””ì˜¤ ìŠ¤íŠ¸ë¦¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ÄÚµ¦ ÆÄ¶ó¹ÌÅÍ
+                // ì½”ë± íŒŒë¼ë¯¸í„°
                 AVCodecParameters* codecParameters = inputFormatContext->streams[videoStreamIndex]->codecpar;
 
-                // µğÄÚ´õ Ã£±â
+                // ë””ì½”ë” ì°¾ê¸°
                 const AVCodec* decoder = avcodec_find_decoder(codecParameters->codec_id);
                 if (!decoder) {
-                    throw std::runtime_error("µğÄÚ´õ¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ë””ì½”ë”ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // µğÄÚ´õ ÄÁÅØ½ºÆ®
+                // ë””ì½”ë” ì»¨í…ìŠ¤íŠ¸
                 AVCodecContext* decoderContext = avcodec_alloc_context3(decoder);
                 if (!decoderContext) {
-                    throw std::runtime_error("µğÄÚ´õ ÄÁÅØ½ºÆ®¸¦ ÇÒ´çÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ë””ì½”ë” ì»¨í…ìŠ¤íŠ¸ë¥¼ í• ë‹¹í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
                 if (avcodec_parameters_to_context(decoderContext, codecParameters) < 0) {
                     avcodec_free_context(&decoderContext);
-                    throw std::runtime_error("µğÄÚ´õ ÄÁÅØ½ºÆ®¸¦ ¼³Á¤ÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ë””ì½”ë” ì»¨í…ìŠ¤íŠ¸ë¥¼ ì„¤ì •í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
                 if (avcodec_open2(decoderContext, decoder, nullptr) < 0) {
                     avcodec_free_context(&decoderContext);
-                    throw std::runtime_error("µğÄÚ´õ¸¦ ¿­ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ë””ì½”ë”ë¥¼ ì—´ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ½ÇÁ¦ ºñµğ¿À Å©±â Ãâ·Â
-                std::cout << "[" << config.name << "] ½ÇÁ¦ ºñµğ¿À ÇØ»óµµ: "
+                // ì‹¤ì œ ë¹„ë””ì˜¤ í¬ê¸° ì¶œë ¥
+                std::cout << "[" << config.name << "] ì‹¤ì œ ë¹„ë””ì˜¤ í•´ìƒë„: "
                     << decoderContext->width << "x" << decoderContext->height << std::endl;
 
-                // ÇöÀç ½Ã°£ ±â¹İ ÀÎÄÚµù ¼³Á¤ Àû¿ë (ÁÖ/¾ß°£ ¸ğµå)
+                // í˜„ì¬ ì‹œê°„ ê¸°ë°˜ ì¸ì½”ë”© ì„¤ì • ì ìš© (ì£¼/ì•¼ê°„ ëª¨ë“œ)
                 int currentBitrate = config.getCurrentBitrate();
                 int currentFps = config.getCurrentFps();
 
-                std::cout << "[" << config.name << "] ÇöÀç Àû¿ë ¼³Á¤: "
+                std::cout << "[" << config.name << "] í˜„ì¬ ì ìš© ì„¤ì •: "
                     << currentBitrate / 1000 << "Kbps, "
                     << currentFps << "fps" << std::endl;
 
-                // Ãâ·Â ÆÄÀÏ ÀÌ¸§ ¼³Á¤
+                // ì¶œë ¥ íŒŒì¼ ì´ë¦„ ì„¤ì •
                 std::string outputFileName = config.getOutputFileName();
                 {
                     std::lock_guard<std::mutex> lock(statusMutex);
                     currentFileName = outputFileName;
                 }
 
-                // Ãâ·Â ÄÁÅØ½ºÆ® ÃÊ±âÈ­
+                // ì¶œë ¥ ì»¨í…ìŠ¤íŠ¸ ì´ˆê¸°í™”
                 AVFormatContext* outputFormatContext = nullptr;
                 if (avformat_alloc_output_context2(&outputFormatContext, nullptr, "mp4", outputFileName.c_str()) < 0) {
                     avcodec_free_context(&decoderContext);
-                    throw std::runtime_error("Ãâ·Â ÄÁÅØ½ºÆ®¸¦ »ı¼ºÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ì¶œë ¥ ì»¨í…ìŠ¤íŠ¸ë¥¼ ìƒì„±í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ¼ÒÇÁÆ®¿ş¾î HEVC ÀÎÄÚ´õ »ç¿ë (ÇÏµå¿ş¾î °¡¼Ó ´ë½Å)
+                // ì†Œí”„íŠ¸ì›¨ì–´ HEVC ì¸ì½”ë” ì‚¬ìš© (í•˜ë“œì›¨ì–´ ê°€ì† ëŒ€ì‹ )
                 const AVCodec* encoder = avcodec_find_encoder_by_name("h264_mf");
                 if (!encoder) {
-                    printf("»ç¿ë °¡´ÉÇÑ ÀÎÄÚ´õ ¸ñ·Ï:\n");
-                    print_encoders();  // À§¿¡¼­ Á¤ÀÇÇÑ ÇÔ¼ö
+                    printf("ì‚¬ìš© ê°€ëŠ¥í•œ ì¸ì½”ë” ëª©ë¡:\n");
+                    print_encoders();  // ìœ„ì—ì„œ ì •ì˜í•œ í•¨ìˆ˜
 
                     avcodec_free_context(&decoderContext);
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("H.265 ÀÎÄÚ´õ(hevc_mf)¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("H.265 ì¸ì½”ë”(hevc_mf)ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // Ãâ·Â ½ºÆ®¸² »ı¼º
+                // ì¶œë ¥ ìŠ¤íŠ¸ë¦¼ ìƒì„±
                 AVStream* outputStream = avformat_new_stream(outputFormatContext, nullptr);
                 if (!outputStream) {
                     avcodec_free_context(&decoderContext);
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("Ãâ·Â ½ºÆ®¸²À» »ı¼ºÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ì¶œë ¥ ìŠ¤íŠ¸ë¦¼ì„ ìƒì„±í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ÀÎÄÚ´õ ÄÁÅØ½ºÆ®
+                // ì¸ì½”ë” ì»¨í…ìŠ¤íŠ¸
                 AVCodecContext* encoderContext = avcodec_alloc_context3(encoder);
                 if (!encoderContext) {
                     avcodec_free_context(&decoderContext);
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("ÀÎÄÚ´õ ÄÁÅØ½ºÆ®¸¦ ÇÒ´çÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ì¸ì½”ë” ì»¨í…ìŠ¤íŠ¸ë¥¼ í• ë‹¹í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ÀÎÄÚ´õ ¼³Á¤ - h264_mf¿¡ ¸Â°Ô ¼öÁ¤
+                // ì¸ì½”ë” ì„¤ì • - h264_mfì— ë§ê²Œ ìˆ˜ì •
                 encoderContext->height = config.height;
                 encoderContext->width = config.width;
                 encoderContext->sample_aspect_ratio = decoderContext->sample_aspect_ratio;
-                encoderContext->pix_fmt = AV_PIX_FMT_NV12;  // Media Foundation H.264 ÀÎÄÚ´õ´Â NV12 Çü½Ä ¼±È£
+                encoderContext->pix_fmt = AV_PIX_FMT_NV12;  // Media Foundation H.264 ì¸ì½”ë”ëŠ” NV12 í˜•ì‹ ì„ í˜¸
                 encoderContext->bit_rate = currentBitrate;
                 encoderContext->time_base.num = 1;
                 encoderContext->time_base.den = currentFps;
                 encoderContext->framerate.num = currentFps;
                 encoderContext->framerate.den = 1;
-                encoderContext->gop_size = currentFps * 2;  // 2ÃÊ¸¶´Ù Å°ÇÁ·¹ÀÓ
-                encoderContext->max_b_frames = 0;  // B-ÇÁ·¹ÀÓ ºñÈ°¼ºÈ­ (Áö¿¬ ½Ã°£ °¨¼Ò)
+                encoderContext->gop_size = currentFps * 2;  // 2ì´ˆë§ˆë‹¤ í‚¤í”„ë ˆì„
+                encoderContext->max_b_frames = 0;  // B-í”„ë ˆì„ ë¹„í™œì„±í™” (ì§€ì—° ì‹œê°„ ê°ì†Œ)
 
                 if (outputFormatContext->oformat->flags & AVFMT_GLOBALHEADER) {
                     encoderContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
                 }
 
-                // Media Foundation ÀÎÄÚ´õ ¿É¼Ç
+                // Media Foundation ì¸ì½”ë” ì˜µì…˜
                 AVDictionary* encoderOptions = nullptr;
 
-                // h264_mf ÀÎÄÚ´õ¿ë ¿É¼Ç
-                av_dict_set(&encoderOptions, "rate_control", "cbr", 0);       // ÀÏÁ¤ ºñÆ®·¹ÀÌÆ®
-                av_dict_set(&encoderOptions, "quality", "80", 0);             // Ç°Áú °ªÀ» ¼ıÀÚ·Î ¼³Á¤ (³ôÀ»¼ö·Ï ÁÁÀº Ç°Áú)
-                av_dict_set(&encoderOptions, "profile", "high", 0);           // ÇÁ·ÎÇÊ ¼³Á¤ (baseline, main, high)
-                av_dict_set(&encoderOptions, "level", "4.1", 0);              // ·¹º§ ¼³Á¤
+                // h264_mf ì¸ì½”ë”ìš© ì˜µì…˜
+                av_dict_set(&encoderOptions, "rate_control", "cbr", 0);       // ì¼ì • ë¹„íŠ¸ë ˆì´íŠ¸
+                av_dict_set(&encoderOptions, "quality", "80", 0);             // í’ˆì§ˆ ê°’ì„ ìˆ«ìë¡œ ì„¤ì • (ë†’ì„ìˆ˜ë¡ ì¢‹ì€ í’ˆì§ˆ)
+                av_dict_set(&encoderOptions, "profile", "100", 0);           // í”„ë¡œí•„ ì„¤ì • (baseline, main, high)
+                av_dict_set(&encoderOptions, "level", "4.1", 0);              // ë ˆë²¨ ì„¤ì •
 
 
-                // Media Foundation Æ¯È­ ¼³Á¤
-                // Å°ÇÁ·¹ÀÓ °£°İ ¼³Á¤ ¹æ¹ı º¯°æ
-                av_dict_set(&encoderOptions, "keyint", std::to_string(currentFps * 2).c_str(), 0);  // Å°ÇÁ·¹ÀÓ °£°İ
-                // ³·Àº Áö¿¬ ¼³Á¤ ½Ãµµ
-                av_dict_set(&encoderOptions, "delay", "0", 0);                // Áö¿¬ ÃÖ¼ÒÈ­
+                // Media Foundation íŠ¹í™” ì„¤ì •
+                // í‚¤í”„ë ˆì„ ê°„ê²© ì„¤ì • ë°©ë²• ë³€ê²½
+                av_dict_set(&encoderOptions, "gop_size", std::to_string(currentFps * 2).c_str(), 0);  // í‚¤í”„ë ˆì„ ê°„ê²©
+                // ë‚®ì€ ì§€ì—° ì„¤ì • ì‹œë„
+                av_dict_set(&encoderOptions, "delay", "0", 0);                // ì§€ì—° ìµœì†Œí™”
 
 
-                // ÀÎÄÚ´õ ¿ÀÇÂ ½Ã ¿É¼Ç Àü´Ş
+                // ì¸ì½”ë” ì˜¤í”ˆ ì‹œ ì˜µì…˜ ì „ë‹¬
                 ret = avcodec_open2(encoderContext, encoder, &encoderOptions);
                 if (ret < 0) {
                     char errbuf[AV_ERROR_MAX_STRING_SIZE];
                     av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
 
-                    // µğ¹ö±× Á¤º¸ Ãâ·Â
-                    fprintf(stderr, "ÀÎÄÚ´õ ¿ÀÇÂ ½ÇÆĞ: %s\n", errbuf);
+                    // ë””ë²„ê·¸ ì •ë³´ ì¶œë ¥
+                    fprintf(stderr, "ì¸ì½”ë” ì˜¤í”ˆ ì‹¤íŒ¨: %s\n", errbuf);
 
-                    // ¸ğµç ¿É¼Ç Á¦°ÅÇÏ°í ±âº» ¼³Á¤À¸·Î ½Ãµµ
+                    // ëª¨ë“  ì˜µì…˜ ì œê±°í•˜ê³  ê¸°ë³¸ ì„¤ì •ìœ¼ë¡œ ì‹œë„
                     av_dict_free(&encoderOptions);
                     encoderOptions = nullptr;
 
-                    // ±âº» ¼³Á¤À¸·Î ´Ù½Ã ½Ãµµ
-                    fprintf(stderr, "±âº» ¼³Á¤À¸·Î ÀÎÄÚ´õ ¿ÀÇÂ Àç½Ãµµ...\n");
+                    // ê¸°ë³¸ ì„¤ì •ìœ¼ë¡œ ë‹¤ì‹œ ì‹œë„
+                    fprintf(stderr, "ê¸°ë³¸ ì„¤ì •ìœ¼ë¡œ ì¸ì½”ë” ì˜¤í”ˆ ì¬ì‹œë„...\n");
                     ret = avcodec_open2(encoderContext, encoder, NULL);
                     if (ret < 0) {
                         av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
-                        throw std::runtime_error(std::string("ÀÎÄÚ´õ¸¦ ¿­ ¼ö ¾ø½À´Ï´Ù: ") + errbuf);
+                        throw std::runtime_error(std::string("ì¸ì½”ë”ë¥¼ ì—´ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: ") + errbuf);
                     }
                 }
 
-                // »ç¿ëÇÏÁö ¾ÊÀº ¿É¼Ç È®ÀÎ (µğ¹ö±ë¿ë)
+                // ì‚¬ìš©í•˜ì§€ ì•Šì€ ì˜µì…˜ í™•ì¸ (ë””ë²„ê¹…ìš©)
                 if (av_dict_count(encoderOptions) > 0) {
                     char* unused_opts = NULL;
                     av_dict_get_string(encoderOptions, &unused_opts, '=', ',');
-                    printf("¹Ì»ç¿ë ÀÎÄÚ´õ ¿É¼Ç: %s\n", unused_opts);
+                    printf("ë¯¸ì‚¬ìš© ì¸ì½”ë” ì˜µì…˜: %s\n", unused_opts);
                     av_free(unused_opts);
                 }
 
                 av_dict_free(&encoderOptions);
 
-                // ½ºÆ®¸² ÆÄ¶ó¹ÌÅÍ ¼³Á¤
+                // ìŠ¤íŠ¸ë¦¼ íŒŒë¼ë¯¸í„° ì„¤ì •
                 if (avcodec_parameters_from_context(outputStream->codecpar, encoderContext) < 0) {
                     avcodec_free_context(&encoderContext);
                     avcodec_free_context(&decoderContext);
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("ÄÚµ¦ ÆÄ¶ó¹ÌÅÍ¸¦ º¹»çÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ì½”ë± íŒŒë¼ë¯¸í„°ë¥¼ ë³µì‚¬í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
                 outputStream->time_base = encoderContext->time_base;
 
-                // Ãâ·Â ÆÄÀÏ ¿­±â
+                // ì¶œë ¥ íŒŒì¼ ì—´ê¸°
                 if (!(outputFormatContext->oformat->flags & AVFMT_NOFILE)) {
                     if (avio_open(&outputFormatContext->pb, outputFileName.c_str(), AVIO_FLAG_WRITE) < 0) {
                         avcodec_free_context(&encoderContext);
                         avcodec_free_context(&decoderContext);
                         avformat_free_context(outputFormatContext);
-                        throw std::runtime_error("Ãâ·Â ÆÄÀÏÀ» ¿­ ¼ö ¾ø½À´Ï´Ù: " + outputFileName);
+                        throw std::runtime_error("ì¶œë ¥ íŒŒì¼ì„ ì—´ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: " + outputFileName);
                     }
                 }
 
-                // ÆÄÀÏ Çì´õ ¾²±â
+                // íŒŒì¼ í—¤ë” ì“°ê¸°
                 if (avformat_write_header(outputFormatContext, nullptr) < 0) {
                     avcodec_free_context(&encoderContext);
                     avcodec_free_context(&decoderContext);
@@ -499,10 +499,10 @@ private:
                         avio_closep(&outputFormatContext->pb);
                     }
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("ÆÄÀÏ Çì´õ¸¦ ¾µ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("íŒŒì¼ í—¤ë”ë¥¼ ì“¸ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ½ºÄÉÀÏ·¯ ÃÊ±âÈ­
+                // ìŠ¤ì¼€ì¼ëŸ¬ ì´ˆê¸°í™”
                 SwsContext* swsContext = sws_getContext(
                     decoderContext->width, decoderContext->height, decoderContext->pix_fmt,
                     encoderContext->width, encoderContext->height, encoderContext->pix_fmt,
@@ -516,10 +516,10 @@ private:
                         avio_closep(&outputFormatContext->pb);
                     }
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("½ºÄÉÀÏ·¯ ÄÁÅØ½ºÆ®¸¦ ÃÊ±âÈ­ÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ìŠ¤ì¼€ì¼ëŸ¬ ì»¨í…ìŠ¤íŠ¸ë¥¼ ì´ˆê¸°í™”í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ÆĞÅ¶ ¹× ÇÁ·¹ÀÓ ÃÊ±âÈ­
+                // íŒ¨í‚· ë° í”„ë ˆì„ ì´ˆê¸°í™”
                 AVPacket* packet = av_packet_alloc();
                 AVPacket* outPacket = av_packet_alloc();
                 AVFrame* frame = av_frame_alloc();
@@ -537,7 +537,7 @@ private:
                         avio_closep(&outputFormatContext->pb);
                     }
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("ÆĞÅ¶ÀÌ³ª ÇÁ·¹ÀÓÀ» ÇÒ´çÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("íŒ¨í‚·ì´ë‚˜ í”„ë ˆì„ì„ í• ë‹¹í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
                 outFrame->format = encoderContext->pix_fmt;
@@ -556,29 +556,29 @@ private:
                         avio_closep(&outputFormatContext->pb);
                     }
                     avformat_free_context(outputFormatContext);
-                    throw std::runtime_error("Ãâ·Â ÇÁ·¹ÀÓ ¹öÆÛ¸¦ ÇÒ´çÇÒ ¼ö ¾ø½À´Ï´Ù.");
+                    throw std::runtime_error("ì¶œë ¥ í”„ë ˆì„ ë²„í¼ë¥¼ í• ë‹¹í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 }
 
-                // ³ìÈ­ ½ÃÀÛ ½Ã°£ ¹× ¼¼±×¸ÕÆ® ½Ã°£ ÃÊ±âÈ­
+                // ë…¹í™” ì‹œì‘ ì‹œê°„ ë° ì„¸ê·¸ë¨¼íŠ¸ ì‹œê°„ ì´ˆê¸°í™”
                 int64_t startTime = av_gettime();
                 int64_t segmentStartTime = startTime;
                 int64_t pts = 0;
                 int localFrameCount = 0;
-                int frameSkipCounter = 0; // ÇÁ·¹ÀÓ ½ºÅµ Ä«¿îÅÍ (FPS Á¶Àı¿ë)
+                int frameSkipCounter = 0; // í”„ë ˆì„ ìŠ¤í‚µ ì¹´ìš´í„° (FPS ì¡°ì ˆìš©)
 
-                // ÀÓ½Ã ·ÎÄÃ º¯¼öµé
+                // ì„ì‹œ ë¡œì»¬ ë³€ìˆ˜ë“¤
                 bool createNewSegment = false;
                 bool reconnectRequired = false;
 
-                // ¸ŞÀÎ ÀÎÄÚµù ·çÇÁ
+                // ë©”ì¸ ì¸ì½”ë”© ë£¨í”„
                 while (isRunning) {
-                    // ÀÏ½Ã Á¤Áö »óÅÂ È®ÀÎ
+                    // ì¼ì‹œ ì •ì§€ ìƒíƒœ í™•ì¸
                     if (isPaused) {
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         continue;
                     }
 
-                    // ¼¼±×¸ÕÆ® ½Ã°£ Ã¼Å© (ÆÄÀÏ ºĞÇÒ)
+                    // ì„¸ê·¸ë¨¼íŠ¸ ì‹œê°„ ì²´í¬ (íŒŒì¼ ë¶„í• )
                     int64_t currentTime = av_gettime();
                     if (config.segmentDuration > 0 &&
                         (currentTime - segmentStartTime) / 1000000 > config.segmentDuration) {
@@ -586,28 +586,28 @@ private:
                         break;
                     }
 
-                    // ÆĞÅ¶ ÀĞ±â (UDP¸¦ ÅëÇØ)
+                    // íŒ¨í‚· ì½ê¸° (UDPë¥¼ í†µí•´)
                     int ret = av_read_frame(inputFormatContext, packet);
                     if (ret < 0) {
-                        // ½ºÆ®¸² ³¡ÀÌ°Å³ª ¿À·ù ¹ß»ı
+                        // ìŠ¤íŠ¸ë¦¼ ëì´ê±°ë‚˜ ì˜¤ë¥˜ ë°œìƒ
                         if (ret == AVERROR_EOF || avio_feof(inputFormatContext->pb)) {
-                            std::cout << "[" << config.name << "] ½ºÆ®¸² ³¡¿¡ µµ´Ş" << std::endl;
+                            std::cout << "[" << config.name << "] ìŠ¤íŠ¸ë¦¼ ëì— ë„ë‹¬" << std::endl;
                             break;
                         }
 
                         if (ret == AVERROR(EAGAIN)) {
-                            // µ¥ÀÌÅÍ°¡ ¾ÆÁ÷ ¾øÀ¸¹Ç·Î ´ë±â
+                            // ë°ì´í„°ê°€ ì•„ì§ ì—†ìœ¼ë¯€ë¡œ ëŒ€ê¸°
                             std::this_thread::sleep_for(std::chrono::milliseconds(10));
                             continue;
                         }
 
-                        // ³×Æ®¿öÅ© ¿À·ù µîÀÇ °æ¿ì Àç¿¬°á ÇÊ¿ä
+                        // ë„¤íŠ¸ì›Œí¬ ì˜¤ë¥˜ ë“±ì˜ ê²½ìš° ì¬ì—°ê²° í•„ìš”
                         errorCount++;
-                        std::cerr << "[" << config.name << "] ÆĞÅ¶ ÀĞ±â ¿À·ù: " << ret
-                            << " (¿¡·¯ " << errorCount << "È¸)" << std::endl;
+                        std::cerr << "[" << config.name << "] íŒ¨í‚· ì½ê¸° ì˜¤ë¥˜: " << ret
+                            << " (ì—ëŸ¬ " << errorCount << "íšŒ)" << std::endl;
 
                         if (errorCount > 5) {
-                            std::cerr << "[" << config.name << "] ³Ê¹« ¸¹Àº ¿À·ù ¹ß»ı, Àç¿¬°á ½Ãµµ" << std::endl;
+                            std::cerr << "[" << config.name << "] ë„ˆë¬´ ë§ì€ ì˜¤ë¥˜ ë°œìƒ, ì¬ì—°ê²° ì‹œë„" << std::endl;
                             reconnectRequired = true;
                             break;
                         }
@@ -616,12 +616,12 @@ private:
                         continue;
                     }
 
-                    // ºñµğ¿À ÆĞÅ¶¸¸ Ã³¸®
+                    // ë¹„ë””ì˜¤ íŒ¨í‚·ë§Œ ì²˜ë¦¬
                     if (packet->stream_index == videoStreamIndex) {
-                        // ÇÁ·¹ÀÓ ½ºÅµ ·ÎÁ÷ - ³·Àº FPS ±¸Çö
+                        // í”„ë ˆì„ ìŠ¤í‚µ ë¡œì§ - ë‚®ì€ FPS êµ¬í˜„
                         frameSkipCounter++;
                         if (frameSkipCounter % (30 / config.getCurrentFps()) != 0) {
-                            // ÀÏºÎ ÇÁ·¹ÀÓ °Ç³Ê¶Ù±â (¿øº» 30fps ±âÁØ)
+                            // ì¼ë¶€ í”„ë ˆì„ ê±´ë„ˆë›°ê¸° (ì›ë³¸ 30fps ê¸°ì¤€)
                             av_packet_unref(packet);
                             continue;
                         }
@@ -641,13 +641,13 @@ private:
                                 break;
                             }
 
-                            // ÇÁ·¹ÀÓ º¯È¯
+                            // í”„ë ˆì„ ë³€í™˜
                             sws_scale(swsContext, frame->data, frame->linesize, 0, frame->height,
                                 outFrame->data, outFrame->linesize);
 
                             outFrame->pts = pts++;
 
-                            // ÀÎÄÚµù
+                            // ì¸ì½”ë”©
                             ret = avcodec_send_frame(encoderContext, outFrame);
                             if (ret < 0) {
                                 break;
@@ -673,11 +673,11 @@ private:
                                 localFrameCount++;
                                 frameCount++;
 
-                                // ÁøÇà »óÈ² Ç¥½Ã (500ÇÁ·¹ÀÓ¸¶´Ù)
+                                // ì§„í–‰ ìƒí™© í‘œì‹œ (500í”„ë ˆì„ë§ˆë‹¤)
                                 if (localFrameCount % 500 == 0) {
                                     int64_t elapsedMs = (av_gettime() - startTime) / 1000;
                                     float fps = (elapsedMs > 0) ? (localFrameCount * 1000.0f / elapsedMs) : 0;
-                                    std::cout << "[" << config.name << "] ÇÁ·¹ÀÓ: " << localFrameCount
+                                    std::cout << "[" << config.name << "] í”„ë ˆì„: " << localFrameCount
                                         << ", FPS: " << fps << std::endl;
                                 }
                             }
@@ -687,7 +687,7 @@ private:
                     av_packet_unref(packet);
                 }
 
-                // ³²Àº ÇÁ·¹ÀÓ ÇÃ·¯½Ã
+                // ë‚¨ì€ í”„ë ˆì„ í”ŒëŸ¬ì‹œ
                 avcodec_send_frame(encoderContext, nullptr);
                 while (true) {
                     int ret = avcodec_receive_packet(encoderContext, outPacket);
@@ -705,10 +705,10 @@ private:
                     frameCount++;
                 }
 
-                // ÆÄÀÏ Æ®·¹ÀÏ·¯ ¾²±â
+                // íŒŒì¼ íŠ¸ë ˆì¼ëŸ¬ ì“°ê¸°
                 av_write_trailer(outputFormatContext);
 
-                // ¸®¼Ò½º Á¤¸®
+                // ë¦¬ì†ŒìŠ¤ ì •ë¦¬
                 sws_freeContext(swsContext);
                 av_packet_free(&packet);
                 av_packet_free(&outPacket);
@@ -724,67 +724,67 @@ private:
                 avformat_free_context(outputFormatContext);
                 avformat_close_input(&inputFormatContext);
 
-                // ÁøÇà »óÈ² ¹× »óÅÂ ¾÷µ¥ÀÌÆ®
+                // ì§„í–‰ ìƒí™© ë° ìƒíƒœ ì—…ë°ì´íŠ¸
                 std::cout << "[" << config.name << "] "
-                    << (createNewSegment ? "¼¼±×¸ÕÆ® ¿Ï·á" : "³ìÈ­ ¿Ï·á")
-                    << ": " << outputFileName << " (" << localFrameCount << " ÇÁ·¹ÀÓ)" << std::endl;
+                    << (createNewSegment ? "ì„¸ê·¸ë¨¼íŠ¸ ì™„ë£Œ" : "ë…¹í™” ì™„ë£Œ")
+                    << ": " << outputFileName << " (" << localFrameCount << " í”„ë ˆì„)" << std::endl;
 
-                // ¼¼±×¸ÕÆ® ¸ğµå¿¡¼­ »õ ¼¼±×¸ÕÆ® »ı¼º
+                // ì„¸ê·¸ë¨¼íŠ¸ ëª¨ë“œì—ì„œ ìƒˆ ì„¸ê·¸ë¨¼íŠ¸ ìƒì„±
                 if (createNewSegment && isRunning) {
                     segmentStartTime = av_gettime();
-                    continue; // »õ ¼¼±×¸ÕÆ®¸¦ À§ÇØ ·çÇÁ °è¼Ó
+                    continue; // ìƒˆ ì„¸ê·¸ë¨¼íŠ¸ë¥¼ ìœ„í•´ ë£¨í”„ ê³„ì†
                 }
 
-                // Àç¿¬°á ÇÊ¿ä ½Ã Ã³¸®
+                // ì¬ì—°ê²° í•„ìš” ì‹œ ì²˜ë¦¬
                 if (reconnectRequired) {
-                    std::cout << "[" << config.name << "] Àç¿¬°á Áß..." << std::endl;
-                    std::this_thread::sleep_for(std::chrono::seconds(2)); // ¾à°£ÀÇ Áö¿¬ ÈÄ Àç½Ãµµ
+                    std::cout << "[" << config.name << "] ì¬ì—°ê²° ì¤‘..." << std::endl;
+                    std::this_thread::sleep_for(std::chrono::seconds(2)); // ì•½ê°„ì˜ ì§€ì—° í›„ ì¬ì‹œë„
                     continue;
                 }
 
-                // ´Ù¸¥ »óÈ²¿¡¼­´Â ·çÇÁ Á¾·á
+                // ë‹¤ë¥¸ ìƒí™©ì—ì„œëŠ” ë£¨í”„ ì¢…ë£Œ
                 break;
             }
             catch (const std::exception& e) {
                 errorCount++;
-                std::cerr << "[" << config.name << "] ¿À·ù ¹ß»ı: " << e.what() << std::endl;
+                std::cerr << "[" << config.name << "] ì˜¤ë¥˜ ë°œìƒ: " << e.what() << std::endl;
 
-                // ÀÔ·Â ÄÁÅØ½ºÆ®°¡ ¿­·Á ÀÖÀ¸¸é ´İ±â
+                // ì…ë ¥ ì»¨í…ìŠ¤íŠ¸ê°€ ì—´ë ¤ ìˆìœ¼ë©´ ë‹«ê¸°
                 if (inputFormatContext) {
                     avformat_close_input(&inputFormatContext);
                 }
 
-                // Àá½Ã ´ë±â ÈÄ Àç½Ãµµ
+                // ì ì‹œ ëŒ€ê¸° í›„ ì¬ì‹œë„
                 std::this_thread::sleep_for(std::chrono::seconds(5));
 
                 if (errorCount > 20) {
-                    std::cerr << "[" << config.name << "] ¿À·ù°¡ ³Ê¹« ¸¹ÀÌ ¹ß»ıÇÏ¿© ³ìÈ­¸¦ Áß´ÜÇÕ´Ï´Ù." << std::endl;
+                    std::cerr << "[" << config.name << "] ì˜¤ë¥˜ê°€ ë„ˆë¬´ ë§ì´ ë°œìƒí•˜ì—¬ ë…¹í™”ë¥¼ ì¤‘ë‹¨í•©ë‹ˆë‹¤." << std::endl;
                     break;
                 }
             }
         }
 
-        std::cout << "[" << config.name << "] ³ìÈ­ ½º·¹µå Á¾·á" << std::endl;
+        std::cout << "[" << config.name << "] ë…¹í™” ìŠ¤ë ˆë“œ ì¢…ë£Œ" << std::endl;
     }
 };
 
-// ´ÙÁß Ä«¸Ş¶ó °ü¸® Å¬·¡½º
+// ë‹¤ì¤‘ ì¹´ë©”ë¼ ê´€ë¦¬ í´ë˜ìŠ¤
 class MultiCameraRecorder {
 private:
     std::vector<ONVIFCameraConfig> cameraConfigs;
     std::vector<std::unique_ptr<ONVIFCameraRecorder>> recorders;
 
-    // ¿À·¡µÈ ³ìÈ­ ÆÄÀÏ Á¤¸® ÇÔ¼ö
+    // ì˜¤ë˜ëœ ë…¹í™” íŒŒì¼ ì •ë¦¬ í•¨ìˆ˜
     void cleanupOldRecordings(const std::string& directory, int daysToKeep) {
-        std::cout << "¿À·¡µÈ ³ìÈ­ ÆÄÀÏ Á¤¸® Áß... (" << daysToKeep << "ÀÏ ÀÌ»ó º¸°ü)" << std::endl;
+        std::cout << "ì˜¤ë˜ëœ ë…¹í™” íŒŒì¼ ì •ë¦¬ ì¤‘... (" << daysToKeep << "ì¼ ì´ìƒ ë³´ê´€)" << std::endl;
 
-        // ÇöÀç ½Ã°£ °è»ê
+        // í˜„ì¬ ì‹œê°„ ê³„ì‚°
         auto now = std::chrono::system_clock::now();
         auto cutoffTime = now - std::chrono::hours(24 * daysToKeep);
         auto cutoffTimeT = std::chrono::system_clock::to_time_t(cutoffTime);
 
 #ifdef _WIN32
-        // Windows¿¡¼­ µğ·ºÅä¸® Å½»ö
+        // Windowsì—ì„œ ë””ë ‰í† ë¦¬ íƒìƒ‰
         WIN32_FIND_DATAA findData;
         std::string searchPath = directory + "\\*.mp4";
         HANDLE hFind = FindFirstFileA(searchPath.c_str(), &findData);
@@ -794,7 +794,7 @@ private:
                 std::string filename = findData.cFileName;
                 std::string fullPath = directory + "\\" + filename;
 
-                // ÆÄÀÏ ½Ã°£ È®ÀÎ
+                // íŒŒì¼ ì‹œê°„ í™•ì¸
                 FILETIME ftCreate, ftAccess, ftWrite;
                 HANDLE hFile = CreateFileA(fullPath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
                     OPEN_EXISTING, 0, NULL);
@@ -804,19 +804,19 @@ private:
                         uli.LowPart = ftWrite.dwLowDateTime;
                         uli.HighPart = ftWrite.dwHighDateTime;
 
-                        // ÆÄÀÏ ½Ã°£À» time_t·Î º¯È¯ (Windows FILETIMEÀº 1601³âºÎÅÍ ½ÃÀÛ, time_t´Â 1970³âºÎÅÍ ½ÃÀÛ)
+                        // íŒŒì¼ ì‹œê°„ì„ time_të¡œ ë³€í™˜ (Windows FILETIMEì€ 1601ë…„ë¶€í„° ì‹œì‘, time_tëŠ” 1970ë…„ë¶€í„° ì‹œì‘)
                         const int64_t WINDOWS_TICK = 10000000;
                         const int64_t SEC_TO_UNIX_EPOCH = 11644473600LL;
                         time_t fileTime = (uli.QuadPart / WINDOWS_TICK - SEC_TO_UNIX_EPOCH);
 
-                        // ¿À·¡µÈ ÆÄÀÏ »èÁ¦
+                        // ì˜¤ë˜ëœ íŒŒì¼ ì‚­ì œ
                         if (fileTime < cutoffTimeT) {
                             CloseHandle(hFile);
                             if (DeleteFileA(fullPath.c_str())) {
-                                std::cout << "»èÁ¦µÊ: " << filename << std::endl;
+                                std::cout << "ì‚­ì œë¨: " << filename << std::endl;
                             }
                             else {
-                                std::cerr << "»èÁ¦ ½ÇÆĞ: " << filename << std::endl;
+                                std::cerr << "ì‚­ì œ ì‹¤íŒ¨: " << filename << std::endl;
                             }
                             continue;
                         }
@@ -827,30 +827,30 @@ private:
             FindClose(hFind);
         }
 #else
-        // Linux/Unix ½Ã½ºÅÛ¿¡¼­ µğ·ºÅä¸® Å½»ö (dirent.h »ç¿ë)
+        // Linux/Unix ì‹œìŠ¤í…œì—ì„œ ë””ë ‰í† ë¦¬ íƒìƒ‰ (dirent.h ì‚¬ìš©)
         DIR* dir = opendir(directory.c_str());
         if (dir != NULL) {
             struct dirent* entry;
             while ((entry = readdir(dir)) != NULL) {
                 std::string filename = entry->d_name;
 
-                // mp4 ÆÄÀÏ¸¸ Ã³¸®
+                // mp4 íŒŒì¼ë§Œ ì²˜ë¦¬
                 if (filename.length() < 4 || filename.substr(filename.length() - 4) != ".mp4") {
                     continue;
                 }
 
                 std::string fullPath = directory + "/" + filename;
 
-                // ÆÄÀÏ Á¤º¸ È®ÀÎ
+                // íŒŒì¼ ì •ë³´ í™•ì¸
                 struct stat fileStat;
                 if (stat(fullPath.c_str(), &fileStat) == 0) {
-                    // ¼öÁ¤ ½Ã°£ È®ÀÎ
+                    // ìˆ˜ì • ì‹œê°„ í™•ì¸
                     if (fileStat.st_mtime < cutoffTimeT) {
                         if (remove(fullPath.c_str()) == 0) {
-                            std::cout << "»èÁ¦µÊ: " << filename << std::endl;
+                            std::cout << "ì‚­ì œë¨: " << filename << std::endl;
                         }
                         else {
-                            std::cerr << "»èÁ¦ ½ÇÆĞ: " << filename << std::endl;
+                            std::cerr << "ì‚­ì œ ì‹¤íŒ¨: " << filename << std::endl;
                         }
                     }
                 }
@@ -861,22 +861,22 @@ private:
     }
 
 public:
-    // Á¤±âÀûÀÎ À¯Áö °ü¸® ÀÛ¾÷ ¼öÇà (µğ½ºÅ© °ø°£ °ü¸®)
+    // ì •ê¸°ì ì¸ ìœ ì§€ ê´€ë¦¬ ì‘ì—… ìˆ˜í–‰ (ë””ìŠ¤í¬ ê³µê°„ ê´€ë¦¬)
     void performMaintenance() {
-        std::cout << "µğ½ºÅ© À¯Áö °ü¸® ÀÛ¾÷ ½ÇÇà Áß..." << std::endl;
+        std::cout << "ë””ìŠ¤í¬ ìœ ì§€ ê´€ë¦¬ ì‘ì—… ì‹¤í–‰ ì¤‘..." << std::endl;
 
-        // °¢ Ä«¸Ş¶ó µğ·ºÅä¸® Á¤¸®
+        // ê° ì¹´ë©”ë¼ ë””ë ‰í† ë¦¬ ì •ë¦¬
         for (const auto& config : cameraConfigs) {
             cleanupOldRecordings(config.outputDir, 7);
         }
     }
 
-    // Ä«¸Ş¶ó ±¸¼º Ãß°¡
+    // ì¹´ë©”ë¼ êµ¬ì„± ì¶”ê°€
     void addCamera(const ONVIFCameraConfig& config) {
         cameraConfigs.push_back(config);
     }
 
-    // ¸ğµç Ä«¸Ş¶ó ³ìÈ­ ½ÃÀÛ
+    // ëª¨ë“  ì¹´ë©”ë¼ ë…¹í™” ì‹œì‘
     void startAll() {
         for (const auto& config : cameraConfigs) {
             auto recorder = std::make_unique<ONVIFCameraRecorder>(config);
@@ -885,13 +885,13 @@ public:
             }
         }
 
-        // ¿À·¡µÈ ÆÄÀÏ Á¤¸® (7ÀÏ ÀÌ»ó µÈ ÆÄÀÏ)
+        // ì˜¤ë˜ëœ íŒŒì¼ ì •ë¦¬ (7ì¼ ì´ìƒ ëœ íŒŒì¼)
         for (const auto& config : cameraConfigs) {
             cleanupOldRecordings(config.outputDir, 7);
         }
     }
 
-    // ¸ğµç Ä«¸Ş¶ó ³ìÈ­ ÁßÁö
+    // ëª¨ë“  ì¹´ë©”ë¼ ë…¹í™” ì¤‘ì§€
     void stopAll() {
         for (auto& recorder : recorders) {
             recorder->stop();
@@ -899,26 +899,26 @@ public:
         recorders.clear();
     }
 
-    // ¸ğµç Ä«¸Ş¶ó »óÅÂ Ãâ·Â
+    // ëª¨ë“  ì¹´ë©”ë¼ ìƒíƒœ ì¶œë ¥
     void printAllStatus() {
-        std::cout << "===== Ä«¸Ş¶ó »óÅÂ =====" << std::endl;
+        std::cout << "===== ì¹´ë©”ë¼ ìƒíƒœ =====" << std::endl;
         for (auto& recorder : recorders) {
             auto status = recorder->getStatus();
-            std::cout << "Ä«¸Ş¶ó: " << status["name"] << std::endl;
-            std::cout << "  »óÅÂ: " << status["state"] << std::endl;
-            std::cout << "  ÇöÀç ÆÄÀÏ: " << status["current_file"] << std::endl;
-            std::cout << "  ÇÁ·¹ÀÓ ¼ö: " << status["frames_recorded"] << std::endl;
-            std::cout << "  ½ÇÇà ½Ã°£: " << status["running_time"] << std::endl;
-            std::cout << "  ÇöÀç ºñÆ®·¹ÀÌÆ®: " << status["current_bitrate"] << std::endl;
-            std::cout << "  ÇöÀç FPS: " << status["current_fps"] << std::endl;
-            std::cout << "  ¿À·ù ¼ö: " << status["error_count"] << std::endl;
+            std::cout << "ì¹´ë©”ë¼: " << status["name"] << std::endl;
+            std::cout << "  ìƒíƒœ: " << status["state"] << std::endl;
+            std::cout << "  í˜„ì¬ íŒŒì¼: " << status["current_file"] << std::endl;
+            std::cout << "  í”„ë ˆì„ ìˆ˜: " << status["frames_recorded"] << std::endl;
+            std::cout << "  ì‹¤í–‰ ì‹œê°„: " << status["running_time"] << std::endl;
+            std::cout << "  í˜„ì¬ ë¹„íŠ¸ë ˆì´íŠ¸: " << status["current_bitrate"] << std::endl;
+            std::cout << "  í˜„ì¬ FPS: " << status["current_fps"] << std::endl;
+            std::cout << "  ì˜¤ë¥˜ ìˆ˜: " << status["error_count"] << std::endl;
             std::cout << std::endl;
         }
     }
 
-    // µğ½ºÅ© »ç¿ë·® Ãâ·Â
+    // ë””ìŠ¤í¬ ì‚¬ìš©ëŸ‰ ì¶œë ¥
     void printDiskUsage() {
-        std::cout << "===== µğ½ºÅ© »ç¿ë·® =====" << std::endl;
+        std::cout << "===== ë””ìŠ¤í¬ ì‚¬ìš©ëŸ‰ =====" << std::endl;
 
         for (const auto& config : cameraConfigs) {
             std::string directory = config.outputDir;
@@ -926,7 +926,7 @@ public:
             int fileCount = 0;
 
 #ifdef _WIN32
-            // Windows¿¡¼­ µğ·ºÅä¸® ³» ÆÄÀÏ Å©±â °è»ê
+            // Windowsì—ì„œ ë””ë ‰í† ë¦¬ ë‚´ íŒŒì¼ í¬ê¸° ê³„ì‚°
             WIN32_FIND_DATAA findData;
             std::string searchPath = directory + "\\*.mp4";
             HANDLE hFind = FindFirstFileA(searchPath.c_str(), &findData);
@@ -944,21 +944,21 @@ public:
                 FindClose(hFind);
             }
 #else
-            // Linux/Unix ½Ã½ºÅÛ¿¡¼­ µğ·ºÅä¸® ³» ÆÄÀÏ Å©±â °è»ê
+            // Linux/Unix ì‹œìŠ¤í…œì—ì„œ ë””ë ‰í† ë¦¬ ë‚´ íŒŒì¼ í¬ê¸° ê³„ì‚°
             DIR* dir = opendir(directory.c_str());
             if (dir != NULL) {
                 struct dirent* entry;
                 while ((entry = readdir(dir)) != NULL) {
                     std::string filename = entry->d_name;
 
-                    // mp4 ÆÄÀÏ¸¸ Ã³¸®
+                    // mp4 íŒŒì¼ë§Œ ì²˜ë¦¬
                     if (filename.length() < 4 || filename.substr(filename.length() - 4) != ".mp4") {
                         continue;
                     }
 
                     std::string fullPath = directory + "/" + filename;
 
-                    // ÆÄÀÏ Å©±â È®ÀÎ
+                    // íŒŒì¼ í¬ê¸° í™•ì¸
                     struct stat fileStat;
                     if (stat(fullPath.c_str(), &fileStat) == 0) {
                         totalSize += fileStat.st_size;
@@ -969,42 +969,72 @@ public:
             }
 #endif
 
-            // MB ¹× GB ´ÜÀ§·Î º¯È¯ÇÏ¿© Ãâ·Â
+            // MB ë° GB ë‹¨ìœ„ë¡œ ë³€í™˜í•˜ì—¬ ì¶œë ¥
             double sizeInMB = totalSize / (1024.0 * 1024.0);
             double sizeInGB = sizeInMB / 1024.0;
 
-            std::cout << "Ä«¸Ş¶ó " << config.name << " (" << directory << "):" << std::endl;
-            std::cout << "  ÆÄÀÏ ¼ö: " << fileCount << std::endl;
-            std::cout << "  ÃÑ ¿ë·®: " << sizeInMB << " MB (" << sizeInGB << " GB)" << std::endl;
+            std::cout << "ì¹´ë©”ë¼ " << config.name << " (" << directory << "):" << std::endl;
+            std::cout << "  íŒŒì¼ ìˆ˜: " << fileCount << std::endl;
+            std::cout << "  ì´ ìš©ëŸ‰: " << sizeInMB << " MB (" << sizeInGB << " GB)" << std::endl;
             std::cout << std::endl;
         }
     }
 };
 
-// ¸ŞÀÎ ÇÔ¼ö
+// ë©”ì¸ í•¨ìˆ˜
 int main() {
-    // ´ÙÁß Ä«¸Ş¶ó ·¹ÄÚ´õ »ı¼º
+    // ë‹¤ì¤‘ ì¹´ë©”ë¼ ë ˆì½”ë” ìƒì„±
     MultiCameraRecorder multiRecorder;
 
-    // Å×½ºÆ® Ä«¸Ş¶ó ¼³Á¤ Ãß°¡ - H.265 IP Ä«¸Ş¶ó·Î º¯°æ
+    // í…ŒìŠ¤íŠ¸ ì¹´ë©”ë¼ ì„¤ì •
     multiRecorder.addCamera(ONVIFCameraConfig(
-        "IPCamera",                           // Ä«¸Ş¶ó ÀÌ¸§
-        "192.168.219.181",                    // IP ÁÖ¼Ò
-        554,                                  // RTSP Ç¥ÁØ Æ÷Æ®
-        "admin",                              // »ç¿ëÀÚ ÀÌ¸§ (Ä«¸Ş¶ó ¼³Á¤¿¡ ¸Â°Ô º¯°æ)
-        "Windo4101!",                           // ºñ¹Ğ¹øÈ£ (Ä«¸Ş¶ó ¼³Á¤¿¡ ¸Â°Ô º¯°æ)
-        "rtsp://admin:Windo4101!@192.168.219.181:554/stream1",  // RTSP URL (Ä«¸Ş¶óÀÇ ½ÇÁ¦ ½ºÆ®¸² °æ·Î·Î º¯°æ)
-        "C:/Download/savedfiles"              // ÀúÀå °æ·Î
+        "IPCamera1",                           // ì¹´ë©”ë¼ ì´ë¦„
+        "192.168.219.150",                    // IP ì£¼ì†Œ
+        554,                                  // RTSP í‘œì¤€ í¬íŠ¸
+        "admin",                              // ì‚¬ìš©ì ì´ë¦„ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+        "Windo4101!",                           // ë¹„ë°€ë²ˆí˜¸ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+        "rtsp://admin:Windo4101!@192.168.219.150:554/stream1",  // RTSP URL (ì¹´ë©”ë¼ì˜ ì‹¤ì œ ìŠ¤íŠ¸ë¦¼ ê²½ë¡œë¡œ ë³€ê²½)
+        "C:/Download/savedfiles"              // ì €ì¥ ê²½ë¡œ
     ));
 
-    // ¸ğµç Ä«¸Ş¶ó ³ìÈ­ ½ÃÀÛ
-    std::cout << "³ìÈ­¸¦ ½ÃÀÛÇÕ´Ï´Ù..." << std::endl;
+    //multiRecorder.addCamera(ONVIFCameraConfig(
+    //    "IPCamera2",                           // ì¹´ë©”ë¼ ì´ë¦„
+    //    "192.168.50.164",                    // IP ì£¼ì†Œ
+    //    554,                                  // RTSP í‘œì¤€ í¬íŠ¸
+    //    "admin",                              // ì‚¬ìš©ì ì´ë¦„ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+    //    "Windo4101!",                           // ë¹„ë°€ë²ˆí˜¸ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+    //    "rtsp://admin:Windo4101!@192.168.50.164:554/stream1",  // RTSP URL (ì¹´ë©”ë¼ì˜ ì‹¤ì œ ìŠ¤íŠ¸ë¦¼ ê²½ë¡œë¡œ ë³€ê²½)
+    //    "C:/Download/savedfiles"              // ì €ì¥ ê²½ë¡œ
+    //));
+
+    multiRecorder.addCamera(ONVIFCameraConfig(
+        "IPCamera3",                           // ì¹´ë©”ë¼ ì´ë¦„
+        "192.168.219.200",                    // IP ì£¼ì†Œ
+        554,                                  // RTSP í‘œì¤€ í¬íŠ¸
+        "admin",                              // ì‚¬ìš©ì ì´ë¦„ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+        "Windo4101!",                           // ë¹„ë°€ë²ˆí˜¸ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+        "rtsp://admin:Windo4101!@192.168.219.200:554/stream1",  // RTSP URL (ì¹´ë©”ë¼ì˜ ì‹¤ì œ ìŠ¤íŠ¸ë¦¼ ê²½ë¡œë¡œ ë³€ê²½)
+        "C:/Download/savedfiles"              // ì €ì¥ ê²½ë¡œ
+    ));
+
+    multiRecorder.addCamera(ONVIFCameraConfig(
+        "IPCamera4",                           // ì¹´ë©”ë¼ ì´ë¦„
+        "192.168.219.135",                    // IP ì£¼ì†Œ
+        554,                                  // RTSP í‘œì¤€ í¬íŠ¸
+        "admin",                              // ì‚¬ìš©ì ì´ë¦„ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+        "Windo4101!",                           // ë¹„ë°€ë²ˆí˜¸ (ì¹´ë©”ë¼ ì„¤ì •ì— ë§ê²Œ ë³€ê²½)
+        "rtsp://admin:Windo4101!@192.168.219.135:554/stream1",  // RTSP URL (ì¹´ë©”ë¼ì˜ ì‹¤ì œ ìŠ¤íŠ¸ë¦¼ ê²½ë¡œë¡œ ë³€ê²½)
+        "C:/Download/savedfiles"              // ì €ì¥ ê²½ë¡œ
+    ));
+
+    // ëª¨ë“  ì¹´ë©”ë¼ ë…¹í™” ì‹œì‘
+    std::cout << "ë…¹í™”ë¥¼ ì‹œì‘í•©ë‹ˆë‹¤..." << std::endl;
     multiRecorder.startAll();
 
-    // ¸ŞÀÎ ·çÇÁ
+    // ë©”ì¸ ë£¨í”„
     bool running = true;
     while (running) {
-        std::cout << "\n¸í·É¾î: status(»óÅÂ), disk(µğ½ºÅ© »ç¿ë·®), clean(ÆÄÀÏ Á¤¸®), stop(ÁßÁö), quit(Á¾·á)" << std::endl;
+        std::cout << "\nëª…ë ¹ì–´: status(ìƒíƒœ), disk(ë””ìŠ¤í¬ ì‚¬ìš©ëŸ‰), clean(íŒŒì¼ ì •ë¦¬), stop(ì¤‘ì§€), quit(ì¢…ë£Œ)" << std::endl;
         std::string command;
         std::getline(std::cin, command);
 
@@ -1018,17 +1048,17 @@ int main() {
             multiRecorder.performMaintenance();
         }
         else if (command == "stop") {
-            std::cout << "³ìÈ­¸¦ ÁßÁöÇÕ´Ï´Ù..." << std::endl;
+            std::cout << "ë…¹í™”ë¥¼ ì¤‘ì§€í•©ë‹ˆë‹¤..." << std::endl;
             multiRecorder.stopAll();
             running = false;
         }
         else if (command == "quit") {
-            std::cout << "ÇÁ·Î±×·¥À» Á¾·áÇÕ´Ï´Ù..." << std::endl;
+            std::cout << "í”„ë¡œê·¸ë¨ì„ ì¢…ë£Œí•©ë‹ˆë‹¤..." << std::endl;
             multiRecorder.stopAll();
             running = false;
         }
         else {
-            std::cout << "¾Ë ¼ö ¾ø´Â ¸í·É¾îÀÔ´Ï´Ù. ´Ù½Ã ½ÃµµÇÏ¼¼¿ä." << std::endl;
+            std::cout << "ì•Œ ìˆ˜ ì—†ëŠ” ëª…ë ¹ì–´ì…ë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•˜ì„¸ìš”." << std::endl;
         }
     }
 
