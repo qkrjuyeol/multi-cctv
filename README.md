@@ -22,6 +22,7 @@
 - 4월 28일 (https://www.notion.so/4-28-1e3458dfe18b80b499e5c0f597e56133) 작성자: 조은정
 - 5월 2일 ()
 - 5월 9일 (https://www.notion.so/5-9-1ee458dfe18b805988cde7c7cea6fb6e) 작성자: 조은정
+- 5월 21일 (https://www.notion.so/5-21-1fa458dfe18b807a8f98d48144719b9f) 작성자: 김민서
 ## 팀원
 ### Front
 박주열(조장)
