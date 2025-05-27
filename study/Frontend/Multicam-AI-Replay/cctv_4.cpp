@@ -1,4 +1,4 @@
-﻿#ifdef _WIN32
+#ifdef _WIN32
 // ① 반드시 <winsock2.h> 먼저, 그 다음에 <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -58,7 +58,6 @@ void SaveLogToCSV_UTF8(const std::string& message) {
 #endif
     std::string filePath = logDir + "/" + dateStr + ".csv";
 
-    // 파일 처음 생성 시 BOM 추가
     bool writeBOM = false;
     std::ifstream checkFile(filePath, std::ios::binary);
     if (!checkFile.good()) {
@@ -69,12 +68,14 @@ void SaveLogToCSV_UTF8(const std::string& message) {
     std::ofstream ofs(filePath, std::ios::app | std::ios::binary);
     if (ofs.is_open()) {
         if (writeBOM) {
-            ofs << "\xEF\xBB\xBF";  // UTF-8 BOM
+            ofs << "\xEF\xBB\xBF";                     // UTF-8 BOM
+            ofs << "time,camera_id,event\n";           // ✅ 헤더 추가
         }
 
         ofs << timeStr << "," << message << "\n";
     }
 }
+
 
 
 
@@ -260,7 +261,23 @@ private:
 
 
     void handleLogMessage(const std::string& log) {
-        SaveLogToCSV_UTF8(config.name + ": " + log);
+        // 예: "Camera1: AI 응답: {\"class\":\"burglary\" confidence:0.9169489145278931}"
+        std::string cameraId = config.name;
+        std::string eventStr = log;
+
+        // class 추출
+        std::size_t classPos = log.find("\"class\":\"");
+        if (classPos != std::string::npos) {
+            std::size_t start = classPos + 9; // 길이 of "class":" = 9
+            std::size_t end = log.find("\"", start);
+            if (end != std::string::npos) {
+                std::string className = log.substr(start, end - start);
+                eventStr = className + " detected";
+            }
+        }
+
+        // 최종 저장 (CSV)
+        SaveLogToCSV_UTF8(cameraId + "," + eventStr);
     }
 
     void acceptClient() {
@@ -612,8 +629,6 @@ private:
 
                 // h264_mf 인코더용 옵션
                 av_dict_set(&encoderOptions, "rate_control", "cbr", 0);       // 일정 비트레이트
-                av_dict_set(&encoderOptions, "quality", "80", 0);             // 품질 값을 숫자로 설정 (높을수록 좋은 품질)
-                av_dict_set(&encoderOptions, "profile", "high", 0);           // 프로필 설정 (baseline, main, high)
                 av_dict_set(&encoderOptions, "level", "4.1", 0);              // 레벨 설정
 
 
@@ -773,6 +788,7 @@ private:
 
                     // 패킷 읽기 (UDP를 통해)
                     int ret = av_read_frame(inputFormatContext, packet);
+
                     if (ret < 0) {
                         // 스트림 끝이거나 오류 발생
                         if (ret == AVERROR_EOF || avio_feof(inputFormatContext->pb)) {
@@ -800,13 +816,17 @@ private:
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         continue;
                     }
+                    else {
+                        std::cout << "[" << config.name << "] 패킷 수신 성공: stream_index=" << packet->stream_index
+                            << ", size=" << packet->size << std::endl;
+                    }
 
                     // 비디오 패킷만 처리
                     if (packet->stream_index == videoStreamIndex) {
-                        // 프레임 스킵 로직 - 낮은 FPS 구현
-                        frameSkipCounter++;
-                        if (frameSkipCounter % (30 / config.getCurrentFps()) != 0) {
-                            // 일부 프레임 건너뛰기 (원본 30fps 기준)
+                        int fps = config.getCurrentFps();
+                        if (fps <= 0) fps = 1;  // 0 또는 음수 방지
+
+                        if (frameSkipCounter % (30 / fps) != 0) {
                             av_packet_unref(packet);
                             continue;
                         }
@@ -1218,9 +1238,6 @@ int main() {
     multiRecorder.addCamera(ONVIFCameraConfig("Camera2", "192.168.50.164", 554, "admin", "Windo4101!", "rtsp://admin:Windo4101!@192.168.50.164:554/stream1", "C:/video", 640, 360, 30, 2000000, 600, "fast", true, 10001));
     multiRecorder.addCamera(ONVIFCameraConfig("Camera3", "192.168.50.39", 554, "admin", "Windo4101!", "rtsp://admin:Windo4101!@192.168.50.39:554/stream1", "C:/video", 640, 360, 30, 2000000, 600, "fast", true, 10002));
     multiRecorder.addCamera(ONVIFCameraConfig("Camera4", "192.168.50.157", 554, "admin", "Windo4101!", "rtsp://admin:Windo4101!@192.168.50.157:554/stream1", "C:/video", 640, 360, 30, 2000000, 600, "fast", true, 10003));
-
-    std::cout << "녹화를 시작합니다..." << std::endl;
-    multiRecorder.startAll();
 
     // 모든 카메라 녹화 시작
     std::cout << "녹화를 시작합니다..." << std::endl;
