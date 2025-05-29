@@ -1,5 +1,6 @@
-#pragma once
+﻿#pragma once
 #include "afxdialogex.h"
+#include <opencv2/opencv.hpp>
 
 // Replay 대화 상자
 class Replay : public CDialogEx
@@ -16,15 +17,21 @@ public:
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
-	virtual BOOL OnInitDialog();                         // ← 수정됨
+	virtual void DoDataExchange(CDataExchange* pDX);
+	virtual BOOL OnInitDialog();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 	DECLARE_MESSAGE_MAP()
 
 	// 이벤트 핸들러
 	afx_msg void OnLbnSelChangeDateList();
 	afx_msg void OnLogItemSelected();
-		
+	afx_msg void OnDestroy();
+	afx_msg void OnStnClickedVideoView();
+	afx_msg void SeekVideo(int seconds);
+	
+	static UINT VideoPlayThread(LPVOID pParam);
+
 public:
 	CListBox m_dateListBox;       // 날짜 리스트 박스
 	CStringArray m_fullFileNames;  // 전체 파일명 저장
@@ -32,4 +39,15 @@ public:
 	CString m_selectedCsvFile;    // 선택된 CSV 파일 이름
 	CString m_csvFolderPath;      // CSV 경로
 	CString m_videoFolderPath;    // 영상 경로
+	CStatic m_videoStatic;
+
+	cv::VideoCapture m_videoCapture;  // OpenCV 캡처 객체
+	CWinThread* m_pVideoThread;
+	bool m_bStopVideo;
+
+	CSliderCtrl m_videoSlider;
+
+	bool m_bPaused = false;
+	bool m_bSeeking = false;
+
 };
