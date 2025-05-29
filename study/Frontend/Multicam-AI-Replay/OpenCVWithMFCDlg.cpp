@@ -593,35 +593,38 @@ DONE:
     return 0;
 }
 
-
 LRESULT COpenCVWithMFCDlg::OnStreamFrame(WPARAM wParam, LPARAM lParam)
 {
-    TRACE("✅ OnStreamFrame() called. wParam=0x%p, lParam=%d\n", (void*)wParam, (int)lParam);
+    static bool isDrawing[4] = { false, false, false, false };
 
     int idx = (int)lParam;
     HBITMAP hBmp = (HBITMAP)wParam;
 
-    // === 여기에 넣으세요 ===
-    if (!camViews[idx]) {
-        TRACE("❌ camViews[%d] is null!\n", idx);
+    if (idx < 0 || idx >= 4 || !camViews[idx]) {
+        if (hBmp) ::DeleteObject(hBmp);  // 자원 누수 방지
         return 0;
     }
 
-    TRACE("OnStreamFrame(): idx=%d, hBmp=0x%p\n", idx, hBmp);
+    // 이미 그리고 있으면 이 프레임은 무시
+    if (isDrawing[idx]) {
+        ::DeleteObject(hBmp);  // 누수 방지
+        return 0;
+    }
+
+    isDrawing[idx] = true;
 
     // 이전 비트맵 제거
     if (m_bitmaps[idx]) {
         ::DeleteObject(m_bitmaps[idx]);
     }
-
     m_bitmaps[idx] = hBmp;
 
     camViews[idx]->Invalidate(FALSE);
     camViews[idx]->UpdateWindow();
 
+    isDrawing[idx] = false;
     return 0;
 }
-
 
 
 
